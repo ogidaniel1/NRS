@@ -22,16 +22,15 @@ def predict():
     #all the list of features collected on the form as alist
    
         feature_list = [
-            'name_of_entity','nature_of_business','business_project','contact_name_phone_email_of_promoter',
-            'proposed_facility_amount','purpose_of_facility','value_chain_category','borrowing_relationship',
-            'fresh_loan_request','request_submitted_to_bank','security_proposed','feasibility_study_available','state'
+            's/n','business_project','proposed_facility_amount','value_chain_category','borrowing_relationship',
+            'fresh_loan_request','request_submitted_to_bank','feasibility_study_available'
             ]
     
         features = [request.form[field] for field in feature_list] #getting values from the html form
         prediction = cv.predict(*features)
         prediction = 1 if prediction == 1 else -1
         return render_template("index.html", prediction = prediction) 
-    return render_template("index.html") 
+    return render_template("index2.html") 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
