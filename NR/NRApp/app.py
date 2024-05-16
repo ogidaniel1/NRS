@@ -32,5 +32,15 @@ def predict():
         return render_template("index.html", prediction = prediction) 
     return render_template("index2.html") 
 
+@app.route("/api/predict", methods=[ 'POST'])
+
+def api_predict():
+
+#     features = request.form.get_json(force=True)
+#     prediction = cv.predict(*features)
+#     prediction = 1 if prediction == 1 else -1
+    return jsonify(prediction: prediction)
+   
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
