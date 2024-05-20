@@ -1,178 +1,75 @@
-<!-- 1. name_of_entity (text)
-2. nature_of_business (text)
-3. business/project (text)
-4. contact_name_phone_email _of_promoter (phone number)
-5. proposed_facility_amount (double)
-6. purpose_of_facility (text)
-7. value_chain_category (dropdown)
-8. borrowing_relationship (yes/no)
-9. fresh_loan_request (yes/no)
-10. request_submitted_to_bank (yes/no)
-11. security_proposed (yes/no)
-12. feasibility_study_available (yes/no)
-13. state (dropdown of Nigeria states) -->
-<!-- 
-#['s/n', 'business_project', 'proposed_facility_amount', 'value_chain_category', 
-    #'borrowing_relationship', 'fresh_loan_request', 'request_submitted_to_bank', 'feasibility_study_available', 'target'] -->
-
-
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Prediction Sysytem</title>
+    <title>Form</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-</head>
 
 <body>
     <div class="container">
+        <h1 class="text-center">Prediction Status Page</h1>
         <form action="/predict" method="post">
-
-            <h2 class="text-center">Prediction Status Page</h2>
-            <div class="form-group">
-                <label for="name_of_entity" class="col-sm-2 col-form-label">Name of Entity:</label>
-                <div class="col-sm-10">
-                    <input type="text" name ="name_of_entity" class="form-control" placeholder="Enter name of entity"
-                        value="{{name_of_entity}}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="nature_of_business" class="col-sm-2 col-form-label">Nature of Business:</label>
-                <div class="col-sm-10">
-                    <input type="text" name ="nature_of_business" class="form-control"
-                        placeholder="Enter nature of business" value="{{nature_of_business}}">
-                </div>
-            </div>
-            <!-- ... -->
-            <div class="form-group">
-                <label for="business_project" class="col-sm-2 col-form-label">Business/Project Type:</label>
-                <div class="col-sm-10">
-                    <select name ="business_project" class="form-control" value="{{business_project}}">
-                        <option value="">Select Business type</option>
-                        <option value="existing">Existing</option>
-                        <option value="fresh">Fresh</option>
+            <table class="table table-striped">
+                <tr>
+                    <th>Proposed Facility Amount</th>
+                    <th>Business Project</th>
+                    <th>Value Chain Category</th>
+                    <th>Borrowing Relationship</th>
+                    <th>Fresh Loan Request</th>
+                    <th>Request Submitted to Bank</th>
+                    <th>Feasibility Study Available</th>
+                </tr>
+                <tr> 
+                    </td>
+                    <td><input type="float" step="0.01" name="proposed_facility_amount" required class="form-control" value="{{proposed_facility_amount}}">
+                    </td>
+                    <td>
+                    <select name="business_project" required class="form-control" value="{{business_project}}">
+                        <option value="">Select Business Type</option>
+                        <option value="1">Exisiting</option>
+                        <option value="0">Fresh</option>  
                     </select>
-                    <!-- Add options here -->
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="contact_name_phone_email_of_promoter" class="col-sm-2 col-form-label">Contact Name, Phone, and
-                    Email:</label>
-                <div class="col-sm-10">
-                    <input type="text" name ="contact_name_phone_email_of_promoter" class="form-control"
-                        placeholder="Enter contact information" value="{{contact_name_phone_email_of_promoter}}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="proposed_facility_amount" class="col-sm-2 col-form-label">Proposed Facility Amount:</label>
-                <div class="col-sm-10">
-                    <input type="float" name ="proposed_facility_amount" class="form-control"
-                        placeholder="Enter proposed facility amount" value="{{proposed_facility_amount}}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="purpose_of_facility" class="col-sm-2 col-form-label">Purpose of Facility:</label>
-                <div class="col-sm-10">
-                    <input type="text" name ="purpose_of_facility" class="form-control"
-                        placeholder="Enter purpose of facility" value="{{purpose_of_facility}}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="value_chain_category" class="col-sm-2 col-form-label">Value Chain Category:</label>
-                <div class="col-sm-10">
-                    <select name ="value_chain_category" class="form-control" value="{{value_chain_category}}">
-                        <option value="">Select category</option>
-                        <option value="yes">Pre-Upstream</option>
-                        <option value="no">Upstream</option>
-                        <option value="yes">Midstream</option>
-                        <option value="no">Downstream</option>
-                    </select>
-                    <!-- Add options here -->
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="borrowing_relationship" class="col-sm-2 col-form-label">Borrowing Relationship:</label>
-                <div class="col-sm-10">
-                    <select name ="borrowing_relationship" class="form-control" value="{{borrowing_relationship}}">
-                        <option value="">Select </option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="fresh_loan_request" class="col-sm-2 col-form-label">Fresh Loan Request:</label>
-                <div class="col-sm-10">
-                    <select name ="fresh_loan_request" class="form-control" value="{{fresh_loan_request}}">
-                        <option value="">Select </option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="request_submitted_to_bank" class="col-sm-2 col-form-label">Request Submitted to
-                    Bank:</label>
-                <div class="col-sm-10">
-                    <select name ="request_submitted_to_bank" class="form-control" value="{{request_submitted_to_bank}}">
-                        <option value="">Select </option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="security_proposed" class="col-sm-2 col-form-label">Security Proposed:</label>
-                <div class="col-sm-10">
-                      <input type="text" name ="security_proposed" class="form-control"
-                            placeholder="Enter security proposed" value="{{security_proposed}}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="feasibility_study_available" class="col-sm-2 col-form-label">Feasibility Study Available:</label>
-                <div class="col-sm-10">
-                    <select name ="feasibility_study_available" class="form-control" value="{{feasibility_study_available}}">
-                        <option value="">Select </option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="state" class="col-sm-2 col-form-label">State:</label>
-                <div class="col-sm-10">
-                    <select name ="state" class="form-control" value="{{state}}">
-                        <option value="">Select state</option>
-                        <option value="yes">FCT</option>
-                        <option value="no">Niger</option>
-                        <!-- Add options for Nigerian states here -->
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-10 offset-sm-2">
-                    <input type="submit" value="Submit" class="btn btn-primary">
-                    <input type="reset" value="Reset" class="btn btn-secondary">
-                </div>
-            </div>
+                </td>
+                    <td>
+                        <select name="value_chain_category" required class="form-control" value="{{value_chain_category}}">
+                            <option value="">Select category</option>
+                            <option value="1">Pre-Upstream</option>
+                            <option value="2">Upstream</option>
+                            <option value="3">Midstream</option>
+                            <option value="4">Downstream</option>
+                            <!-- add more options as needed -->
+                        </select>
+                    </td>
+                    <td>
+                        <select name="borrowing_relationship" required class="form-control">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="fresh_loan_request" required class="form-control">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="request_submitted_to_bank" required class="form-control">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="feasibility_study_available" required class="form-control">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <input type="submit" value="Submit" class="btn btn-primary">
+            <input type="reset" value="Reset" class="btn btn-secondary">
         </form>
-
-        {% if prediction %}
-        {% if prediction == 1 %}
-        
-        <h2 style="color: green">Eligible</h2>
-        {% else %}
-        <h2 style="color: red">Not Eligible</h2>
-        {% endif %}
-        {% endif %}
-        <!-- <p id="display"></p> -->
-      </div>
+    </div>
 </body>
 
 </html>
