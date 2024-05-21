@@ -2,12 +2,14 @@
 <html>
 
 <head>
-    <title>Form</title>
+    <title>NRS Prediction</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 
 <body>
+    <br>
     <div class="container">
         <h1 class="text-center">Prediction Status Page</h1>
+        <br>
         <form action="/predict" method="post">
             <table class="table table-striped">
                 <tr>
@@ -20,19 +22,19 @@
                     <th>Feasibility Study Available</th>
                 </tr>
                 <tr> 
-                    </td>
-                    <td><input type="float" step="0.01" name="proposed_facility_amount" required class="form-control" value="{{proposed_facility_amount}}">
+                    <td><input type="float" step="0.01" name="PROPOSED_FACILITY_AMOUNT" required class="form-control" value="{{PROPOSED_FACILITY_AMOUNT}}">
                     </td>
                     <td>
-                    <select name="business_project" required class="form-control" value="{{business_project}}">
+                        <!-- s/n' -->
+                    <select name="BUSINESS_PROJECT" required class="form-control" value="{{BUSINESS_PROJECT}}">
                         <option value="">Select Business Type</option>
                         <option value="1">Exisiting</option>
                         <option value="0">Fresh</option>  
                     </select>
                 </td>
                     <td>
-                        <select name="value_chain_category" required class="form-control" value="{{value_chain_category}}">
-                            <option value="">Select category</option>
+                        <select name="VALUE_CHAIN_CATEGORY" required class="form-control" value="{{VALUE_CHAIN_CATEGORY}}">
+                            <option value="">Select Category </option>
                             <option value="1">Pre-Upstream</option>
                             <option value="2">Upstream</option>
                             <option value="3">Midstream</option>
@@ -41,25 +43,29 @@
                         </select>
                     </td>
                     <td>
-                        <select name="borrowing_relationship" required class="form-control">
+                        <select name="BORROWING_RELATIONSHIP" required class="form-control">
+                            <option value="">Select</option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
                     </td>
                     <td>
-                        <select name="fresh_loan_request" required class="form-control">
+                        <select name="FRESH_LOAN_REQUEST" required class="form-control">
+                            <option value="">Select</option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
                     </td>
                     <td>
-                        <select name="request_submitted_to_bank" required class="form-control">
+                        <select name="REQUEST_SUBMITTED_TO_BANK" required class="form-control">
+                            <option value="">Select</option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
                     </td>
                     <td>
-                        <select name="feasibility_study_available" required class="form-control">
+                        <select name="FEASIBILITY_STUDY_AVAILABLE" required class="form-control">
+                            <option value="">Select</option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
