@@ -3,6 +3,7 @@ from flask import Flask, render_template,flash, session, request
 from datetime import timedelta
 from flask_sqlalchemy  import SQLAlchemy
 import numpy as np
+import pandas as pd
 
 import pickle, sqlite3
 
@@ -17,33 +18,39 @@ cv = pickle.load(open("../notebook/xgboost.joblib", 'rb'))
 #homepage route...........
 def home():
     #request from the user page............
-    flash("hello")
+    
     return render_template("index.html")
     
-
 @app.route("/predict", methods=['GET', 'POST'])       
 def predict():
 
     if request.method == 'POST':
         # print()
     #all the list of features collected on the form as alist
-        
-        feature_list = [{
-            'BUSINESS_PROJECT':1, 'VALUE_CHAIN_CATEGORY':2,
-                          'BORROWING_RELATIONSHIP':1, 'FRESH_LOAN_REQUEST':1,
-                          'REQUEST_SUBMITTED_TO_BANK':1, 'FEASIBILITY_STUDY_AVAILABLE':0, 'PROPOSED_FACILITY_AMOUNT':2000000000
-            }]
-        
-        features = [request.form[field] for field in feature_list] #getting input values from the html form
-        feature= np.array[[features]]
-        print(feature)
-        prediction = cv.predict(feature)
-        prediction = 1 if prediction == 1 else -1
-         
-        return render_template("index.html", prediction = prediction) 
-    # return render_template("index2.html") 
+    #receiving values from frontend page 
 
-# @app.route("/api/predict", methods=[ 'POST'])
+        features = [
+        request.form.get('BUSINESS_PROJECT'),
+        request.form.get('VALUE_CHAIN_CATEGORY'),
+        request.form.get('BORROWING_RELATIONSHIP'),
+        request.form.get('FRESH_LOAN_REQUEST'),
+        request.form.get('REQUEST_SUBMITTED_TO_BANK'),
+        request.form.get('FEASIBILITY_STUDY_AVAILABLE'),
+        request.form.get('PROPOSED_FACILITY_AMOUNT')
+       ]
+
+        #encoding features
+        encoded_features = [pd.get_dummies(feature) for feature in features]
+        
+        data = pd.concat(encoded_features, axis = 1)
+        # print(data)
+        # make prediction withtrained model 
+        prediction = cv.predict(data)
+        prediction = 1 if prediction == 1 else -1     
+        return render_template("index.html") 
+    
+
+# @app.route("/api/predict", methods=['POST'])
 
 # def api_predict():
 
