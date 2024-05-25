@@ -1,81 +1,78 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 
-<head>
-    <title>NRS Prediction</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+<head> -->
 
-<body>
-    <br>
-    <div class="container">
-        <h1 class="text-center">Prediction Status Page</h1>
-        <br>
-        <form action="/predict" method="post">
-            <table class="table table-striped">
-                <tr>
-                    <th>Proposed Facility Amount</th>
-                    <th>Business Project</th>
-                    <th>Value Chain Category</th>
-                    <th>Borrowing Relationship</th>
-                    <th>Fresh Loan Request</th>
-                    <th>Request Submitted to Bank</th>
-                    <th>Feasibility Study Available</th>
-                </tr>
-                <tr> 
-                    <td><input type="float" step="0.01" name="PROPOSED_FACILITY_AMOUNT" required class="form-control" value="{{PROPOSED_FACILITY_AMOUNT}}">
-                    </td>
-                    <td>
-                        <!-- s/n' -->
-                    <select name="BUSINESS_PROJECT" required class="form-control" value="{{BUSINESS_PROJECT}}">
-                        <option value="">Select Business Type</option>
-                        <option value="1">Exisiting</option>
-                        <option value="0">Fresh</option>  
-                    </select>
-                </td>
-                    <td>
-                        <select name="VALUE_CHAIN_CATEGORY" required class="form-control" value="{{VALUE_CHAIN_CATEGORY}}">
-                            <option value="">Select Category </option>
-                            <option value="1">Pre-Upstream</option>
-                            <option value="2">Upstream</option>
-                            <option value="3">Midstream</option>
-                            <option value="4">Downstream</option>
-                            <!-- add more options as needed -->
-                        </select>
-                    </td>
-                    <td>
-                        <select name="BORROWING_RELATIONSHIP" required class="form-control" >
-                            <option value="">Select</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="FRESH_LOAN_REQUEST" required class="form-control">
-                            <option value="">Select</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="REQUEST_SUBMITTED_TO_BANK" required class="form-control">
-                            <option value="">Select</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="FEASIBILITY_STUDY_AVAILABLE" required class="form-control">
-                            <option value="">Select</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </td>
-                </tr>
-            </table>
-            <input type="submit" value="Submit" class="btn btn-primary">
-            <input type="reset" value="Reset" class="btn btn-secondary">
-        </form>
-    </div>
-</body>
+{% extends "base.html" %}
+{% block title %}NRS Prediction{% endblock %}
+{% block content %}
 
-</html>
+
+<h1>Prediction Status Page</h1>
+<form action="/predict" method="post">
+    <table class="table table-striped">
+        <tr>
+            <th>Proposed Facility Amount</th>
+            <th>Business Project</th>
+            <th>Value Chain Category</th>
+            <th>Borrowing Relationship</th>
+            <th>Fresh Loan Request</th>
+            <th>Request Submitted to Bank</th>
+            <th>Feasibility Study Available</th>
+        </tr>
+        <tr>
+            <td><input type="float" step="0.01" name="PROPOSED_FACILITY_AMOUNT" required class="form-control"
+                    value="{{PROPOSED_FACILITY_AMOUNT}}">
+            </td>
+            <td>
+                <!-- s/n' -->
+                <select name="BUSINESS_PROJECT" required class="form-control" value="{{BUSINESS_PROJECT}}">
+                    <option value="">Select Business Type</option>
+                    <option value="1">Exisiting</option>
+                    <option value="0">Fresh</option>
+                </select>
+            </td>
+            <td>
+                <select name="VALUE_CHAIN_CATEGORY" required class="form-control" value="{{VALUE_CHAIN_CATEGORY}}">
+                    <option value="">Select Category </option>
+                    <option value="1">Pre-Upstream</option>
+                    <option value="2">Upstream</option>
+                    <option value="3">Midstream</option>
+                    <option value="4">Downstream</option>
+                    <!-- add more options as needed -->
+                </select>
+            </td>
+            <td>
+                <select name="BORROWING_RELATIONSHIP" required class="form-control">
+                    <option value="">Select</option>
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+            <td>
+                <select name="FRESH_LOAN_REQUEST" required class="form-control">
+                    <option value="">Select</option>
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+            <td>
+                <select name="REQUEST_SUBMITTED_TO_BANK" required class="form-control">
+                    <option value="">Select</option>
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+            <td>
+                <select name="FEASIBILITY_STUDY_AVAILABLE" required class="form-control">
+                    <option value="">Select</option>
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <input type="submit" value="Submit" class="btn btn-primary">
+    <input type="reset" value="Reset" class="btn btn-secondary">
+</form>
+{% endblock %}
