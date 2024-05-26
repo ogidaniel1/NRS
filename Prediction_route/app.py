@@ -1,21 +1,21 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, flash
 import pandas as pd
 import joblib
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'enter your desired key'
 
 @app.route('/predict', methods=['POST'], strict_slashes=False)
 def prediction_view():
     """Function that predicts whether or not a user is qualified for a loan"""
-    
     # Receiving user inputs
-    business_project = request.json.get('BUSINESS_PROJECT')
-    value_chain_cat = request.json.get('VALUE_CHAIN_CATEGORY')
-    borrrowing_relationship = request.json.get('BORROWING_RELATIONSHIP')
-    fresh_loan_request = request.json.get('FRESH_LOAN_REQUEST')
-    request_submitted_to_bank = request.json.get('REQUEST_SUBMITTED_TO_BANK')
-    feasibility_study_available = request.json.get('FEASIBILITY_STUDY_AVAILABLE')
-    proposed_facility_amount = request.json.get('PROPOSED_FACILITY_AMOUNT')
+    business_project = request.form.get('BUSINESS_PROJECT')
+    value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
+    borrrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
+    fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
+    request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
+    feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
+    proposed_facility_amount = request.form.get('PROPOSED_FACILITY_AMOUNT')
 
     df = pd.DataFrame(
         {'business_project': [business_project],
@@ -48,9 +48,11 @@ def prediction_view():
     prediction = loaded_model.predict(df)
 
     if prediction[0] == 1:
-        return jsonify({'granted': 'your loan request has been granted'})
+        flash("your loan request has been granted")
+        return render_template(granted.html)
     else:
-        return jsonify({'denied': 'your loan request is denied'})
+        flash("your loan request is denied")
+        return render_template(rejected.html)
 
 if __name__ == '__main__':
     app.run(debug=True)
