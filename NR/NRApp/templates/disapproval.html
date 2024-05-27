@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Disapproval Page{% endblock %}
+{% block content %}
+
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header bg-danger text-white text-center">
+                <h2>User Eligibility Rejection</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger text-center" role="alert">
+                    Unfortunately, you are not eligible at this time.
+                </div>
+                <h4 class="text-center">User Details</h4>
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Name</th>
+                                    <td>John Doe</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Email</th>
+                                    <td>john.doe@example.com</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="button" class="btn btn-secondary" onclick="retryApplication()">Retry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <script>
+        function retryApplication() {
+            // Redirect to the retry application form page
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
+
+
+{% endblock %}

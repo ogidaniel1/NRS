@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Search User{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-success text-white text-center">
+        <h2>Search User</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('search') }}">
+            <div class="form-group">
+                <label for="search_term">Search by ID or Email</label>
+                <input type="text" class="form-control" id="search_term" name="search_term" required>
+            </div>
+            <button type="submit" class="btn btn-success">Search</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

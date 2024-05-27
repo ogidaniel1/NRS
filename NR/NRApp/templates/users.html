@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Users</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Registered Users</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Business Name</th>
+                    <th>Business Address</th>
+                    <th>Phone Number</th>
+                    <th>Email</th>
+                    <th>State</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.business_name }}</td>
+                    <td>{{ user.business_address }}</td>
+                    <td>{{ user.phone_number }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.state }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

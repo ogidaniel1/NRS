@@ -1,0 +1,68 @@
+
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="sidebar-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#searchUser" data-toggle="tab">
+                            <span data-feather="home"></span>
+                            Search User
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#predict" data-toggle="tab">
+                            <span data-feather="file"></span>
+                            Predict
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+            <div class="tab-content">
+                <div class="tab-pane active" id="searchUser">
+                    <div class="card">
+                        <div class="card-header bg-success text-white text-center">
+                            <h2>Search User</h2>
+                        </div>
+                        <div class="card-body">
+                            <form action="/search_user" method="post">
+                                <div class="form-group">
+                                    <label for="userId">Search by ID</label>
+                                    <input type="text" id="userId" name="userId" class="form-control" placeholder="Enter User ID">
+                                </div>
+                                <div class="form-group">
+                                    <label for="userEmail">Search by Email</label>
+                                    <input type="email" id="userEmail" name="userEmail" class="form-control" placeholder="Enter User Email">
+                                </div>
+                                <button type="submit" class="btn btn-success">Search</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="predict">
+                    <div class="card">
+                        <div class="card-header bg-success text-white text-center">
+                            <h2>Predict</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Prediction form or content goes here -->
+                            <p>Welcome to the prediction page!</p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
