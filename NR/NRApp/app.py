@@ -30,8 +30,9 @@ class User(db.Model):
 # #homepage route...........
 @app.route("/")
 def home():
-        
-    return render_template("index.html")
+        # return render_template("login.html")
+        return render_template("index.html")
+    
 
 
 #The /register route handles user registration, hashing the password before storing it.
@@ -58,18 +59,21 @@ def register():
 #login route and function ..............
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
+        
         if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['email'] = user.email
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         else:
             flash('Login failed. Check your credentials and try again.', 'danger')
+    
     return render_template('login.html')
-
+    
 # Logout route
 @app.route('/logout')
 def logout():
@@ -81,13 +85,14 @@ def logout():
 
 @app.route('/dashboard')
 def dashboard():
-
-    if 'user_id' not in session:
-        flash('Please log in to access the dashboard.', 'warning')
+    if 'user_id' in session:
+        # Retrieve user information if needed
+        user = User.query.get(session['user_id'])
+        return render_template('dashboard.html', user=user)
+    else:
+        flash('You need to log in first.', 'warning')
         return redirect(url_for('login'))
-    user = User.query.get(session['user_id'])
-    return render_template('dashboard.html', user=user)
-
+    
 #search.......#############....
 
 @app.route('/search', methods=['GET', 'POST'])
@@ -102,57 +107,82 @@ def search():
             return redirect(url_for('dashboard'))
     return render_template('search.html') 
 
+
 #prediction function...................
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST', 'GET'])
 def predict():
     """Function that predicts whether or not a user is qualified for a loan"""
-    
-    # Receiving user inputs
-    business_project = request.form.get('BUSINESS_PROJECT') 
-    value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
-    borrrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
-    fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
-    request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
-    feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
-    proposed_facility_amount = float(request.form.get('PROPOSED_FACILITY_AMOUNT'))
+    if request.method == 'POST':
+
+        # Receiving user inputs
+        business_project = request.form.get('BUSINESS_PROJECT') 
+        value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
+        borrrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
+        fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
+        request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
+        feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
+        proposed_facility_amount = float(request.form.get('PROPOSED_FACILITY_AMOUNT'))
 
 
-    df = pd.DataFrame(
-        {'BUSINESS_PROJECT': [business_project],
-         'VALUE_CHAIN_CATEGORY': [value_chain_cat],
-         'BORROWING_RELATIONSHIP': [borrrowing_relationship],
-         'FRESH_LOAN_REQUEST': [fresh_loan_request],
-         'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
-         'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
-         'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+        df = pd.DataFrame(
+            {'BUSINESS_PROJECT': [business_project],
+            'VALUE_CHAIN_CATEGORY': [value_chain_cat],
+            'BORROWING_RELATIONSHIP': [borrrowing_relationship],
+            'FRESH_LOAN_REQUEST': [fresh_loan_request],
+            'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
+            'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
+            'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+            }
+        )
+        # Encoding dicts
+        encoder_dicts = {
+            'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1}, 
+            'VALUE_CHAIN_CATEGORY': {'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3, \
+                                    'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, \
+                                    'UPSTREAM AND DOWNSTREAM': 6},
+            'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
+            'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1}, 
+            'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
+            'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
         }
-    )
-    # Encoding dicts
-    encoder_dicts = {
-        'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1}, 
-        'VALUE_CHAIN_CATEGORY': {'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3, \
-                                 'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, \
-                                 'UPSTREAM AND DOWNSTREAM': 6},
-        'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
-        'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1}, 
-        'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
-        'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
-    }
 
-    for col, values in encoder_dicts.items():
-        df[col].replace(values, inplace=True)
+        for col, values in encoder_dicts.items():
+            df[col].replace(values, inplace=True)
 
-    # Load the model
-    loaded_model = joblib.load('../notebook/xgboost.joblib')
-    prediction = loaded_model.predict(df)
+        # Load the model
+        loaded_model = joblib.load('../notebook/xgboost.joblib')
+        prediction = loaded_model.predict(df)
 
-    if prediction[0] == 1:
-        flash("your loan request has been granted")
-        return render_template("approval.html")
+        if prediction[0] == 1:
+            flash("your loan request has been granted")
+            return render_template("approval.html")
+        else:
+            flash("your loan request is denied")
+            return render_template("disapproval.html")
+     
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    user = User.query.filter_by(email=email).first()
+
+    if user and check_password_hash(user.password, password):
+        session['user_id'] = user.id
+        session['email'] = user.email
+        return jsonify({'message': 'Login successful!'}), 200
     else:
-        flash("your loan request is denied")
-        return render_template("disapproval.html")
-    
+        return jsonify({'message': 'Invalid username or password'}), 401
+
+@app.route('/api/dashboard', methods=['GET'])
+def api_dashboard():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        return jsonify({'email': user.email, 'user_id': user.id}), 200
+    else:
+        return jsonify({'message': 'You need to log in first.'}), 403
+
    
 @app.route("/api/predict", methods=['POST'], strict_slashes=False)
 
@@ -209,7 +239,6 @@ def api_predict():
 def show_users():
     users = User.query.all()
     return render_template('users.html', users=users)
-
    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
