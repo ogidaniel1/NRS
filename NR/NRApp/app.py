@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from Crypto.Hash import SHA256
 
+#pip install pycryptodome
 # from pycryptodome.Hash import *
 
 import pandas as pd
