@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, login_required, login_user, logout_user, UserMixin, current_user
+from flask_login import LoginManager,login_required, login_user, logout_user, UserMixin, current_user
 from Crypto.Hash import SHA256
 from flask_migrate import Migrate
 from alembic import op
@@ -26,13 +26,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
  
 
-  
-
 
 #10 digit codes for the prediction aprroval page
 
 def generate_unique_code():
-    return ''.join(random.choices('0123456789', k=10))
+    return random.randint(1000000000, 9999999999)
 
 
 @app.route('/approve/<int:user_id>', methods=['GET', 'POST'])
@@ -45,10 +43,12 @@ def approve(user_id):
         flash(f'User {user.email} has been approved with Prediction ID {user.prediction_id}.', 'success')
         return redirect(url_for('dashboard'))
     return render_template('approval.html', user=user)
+     
 
 #The User class defines the database model.
 
 class User(UserMixin, db.Model):
+
     id = db.Column(db.Integer, primary_key=True)
     business_name = db.Column(db.String(150), nullable=False)
     business_address = db.Column(db.String(150), nullable=False)
@@ -57,6 +57,77 @@ class User(UserMixin, db.Model):
     state = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     prediction_id = db.Column(db.String(36), unique=True, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    
+    #prediction section columns....
+    business_project = db.Column(db.String(150), nullable=True)
+    value_chain_cat = db.Column(db.String(150), nullable=True)
+    borrowing_relationship = db.Column(db.String(10), nullable=True)
+    fresh_loan_request = db.Column(db.String(15), nullable=True)
+    request_submitted_to_bank = db.Column(db.String(10), nullable=True)
+    feasibility_study_available = db.Column(db.String(10), nullable=True)
+    proposed_facility_amount = db.Column(db.Float(20), nullable=True)
+
+    #other data to be provided updates by officer 
+
+    PURPOSE_OF_FACILITY = db.Column(db.String(100), nullable=True)
+    NAME_OF_BANK = db.Column(db.String(100), nullable=True)
+    SECURITY_PROPOSED = db.Column(db.String(100), nullable=True)
+    HIGHLIGHTS_OF_DISCUSSION = db.Column(db.Text)
+    RM_BM_NAME_PHONE_NUMBER = db.Column(db.String(100), nullable=True)
+    RM_BM_EMAIL = db.Column(db.String(100), nullable=True)
+    STATUS_UPDATE = db.Column(db.Text)
+    CHALLENGES = db.Column(db.Text)
+    PROPOSED_NEXT_STEPS = db.Column(db.Text)
+
+
+
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Check if current user is admin
+    if not current_user.is_admin:
+        abort(403)  # Forbidden
+    
+    if request.method == 'POST':
+
+        # Update user information by admin officer
+        user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility')
+        user.NAME_OF_BANK = request.form.get('name_of_bank')
+        user.SECURITY_PROPOSED = request.form.get('security_proposed')
+        user.HIGHLIGHTS_OF_DISCUSSION = request.form.get('highlights_of_discussion')
+        user.RM_BM_NAME_PHONE_NUMBER = request.form.get('rm_bm_name_phone_number')
+        user.RM_BM_EMAIL = request.form.get('highlights_of_discussion')
+        user.STATUS_UPDATE = request.form.get('highlights_of_discussion')
+        user.CHALLENGES = request.form.get('highlights_of_discussion')
+        user.PROPOSED_NEXT_STEPS = request.form.get('highlights_of_discussion')
+
+        #level 2  (registration page)
+        user.business_name = request.form.get('business_name')
+        user.business_address = request.form.get('business_address')
+        user.phone_number = request.form.get('phone_number')
+        user.email = request.form.get('email')
+        user.state = request.form.get('state')
+        user.password = request.form.get('password')
+      
+        #level 3 (prediction page)
+        user.business_project = request.form.get('business_project')
+        user.value_chain_cat = request.form.get('value_chain_cat')
+        user.borrowing_relationship = request.form.get('borrowing_relationship')
+        user.fresh_loan_request = request.form.get('fresh_loan_request')
+        user.request_submitted_to_bank = request.form.get('request_submitted_to_bank')
+        user.feasibility_study_available = request.form.get('feasibility_study_available')
+        user.proposed_facility_amount = request.form.get('proposed_facility_amount')
+            
+        # Update other fields as needed...
+        db.session.commit()
+        flash('User information updated successfully.', 'success')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('edit_user.html', user=user) 
+
 
 
 # #homepage route...........
@@ -65,10 +136,10 @@ def home():
                 
         return render_template("login.html")
         
-    
 
 #The /register route handles user registration, hashing the password before storing it.
 
+        
 @app.route('/register', methods=['GET', 'POST'])
 def register():
 
@@ -80,14 +151,58 @@ def register():
         state = request.form.get('state')
         password = request.form.get('password')
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(business_name=business_name, business_address=business_address, phone_number=phone_number, email=email, state=state, password=hashed_password)
+
+        # Add additional fields
+        business_project = request.form.get('business_project')  # Ensure this field is populated
+        value_chain_cat = request.form.get('value_chain_cat')
+        borrowing_relationship = request.form.get('borrowing_relationship')
+        fresh_loan_request = request.form.get('fresh_loan_request')
+        request_submitted_to_bank = request.form.get('request_submitted_to_bank')
+        feasibility_study_available = request.form.get('feasibility_study_available')
+        proposed_facility_amount = request.form.get('proposed_facility_amount')
+        purpose_of_facility = request.form.get('PURPOSE_OF_FACILITY')
+        name_of_bank = request.form.get('NAME_OF_BANK')
+        security_proposed = request.form.get('SECURITY_PROPOSED')
+        highlights_of_discussion = request.form.get('HIGHLIGHTS_OF_DISCUSSION')
+        rm_bm_name_phone_number = request.form.get('RM_BM_NAME_PHONE_NUMBER')
+        rm_bm_email = request.form.get('RM_BM_EMAIL')
+        status_update = request.form.get('STATUS_UPDATE')
+        challenges = request.form.get('CHALLENGES')
+        proposed_next_steps = request.form.get('PROPOSED_NEXT_STEPS')
+
+        new_user = User(
+            business_name=business_name,
+            business_address=business_address,
+            phone_number=phone_number,
+            email=email,
+            state=state,
+            password=hashed_password,
+            business_project=business_project,
+            value_chain_cat=value_chain_cat,
+            borrowing_relationship=borrowing_relationship,
+            fresh_loan_request=fresh_loan_request,
+            request_submitted_to_bank=request_submitted_to_bank,
+            feasibility_study_available=feasibility_study_available,
+            proposed_facility_amount=proposed_facility_amount,
+            PURPOSE_OF_FACILITY=purpose_of_facility,
+            NAME_OF_BANK=name_of_bank,
+            SECURITY_PROPOSED=security_proposed,
+            HIGHLIGHTS_OF_DISCUSSION=highlights_of_discussion,
+            RM_BM_NAME_PHONE_NUMBER=rm_bm_name_phone_number,
+            RM_BM_EMAIL=rm_bm_email,
+            STATUS_UPDATE=status_update,
+            CHALLENGES=challenges,
+            PROPOSED_NEXT_STEPS=proposed_next_steps
+        )
+
         db.session.add(new_user)
         db.session.commit()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
+#there is need to handle if user is already registered
     return render_template('register.html')
 
-
+        
 #wrapper..................
 def login_required(f):
     @wraps(f)
@@ -98,6 +213,8 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+#login logic ..............
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -108,8 +225,12 @@ def login():
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['email'] = user.email
+            session['is_admin'] = user.is_admin
             flash('Login successful!', 'success')
-            return redirect(url_for('dashboard'))  # Redirect to the dashboard page
+            if user.is_admin:
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('dashboard'))
         else:
             flash('Login failed. Check your credentials and try again.', 'danger')
     
@@ -122,6 +243,28 @@ def login():
 def dashboard():
     user = User.query.get(session['user_id'])
     return render_template('dashboard.html', user=user)
+
+
+ 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user_id = session.get('user_id')
+        user = User.query.get(user_id)
+        if user and user.is_admin:
+            return f(*args, **kwargs)
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('login'))
+    return decorated_function
+
+
+#admin.............route
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
 
 
 # #prediction route from login dashboard and function ..............
@@ -138,7 +281,6 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
-
     
 #search.......#############....
 
@@ -162,7 +304,7 @@ def predict():
     if request.method == 'POST':
         business_project = request.form.get('BUSINESS_PROJECT')
         value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
-        borrrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
+        borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
         fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
         request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
         feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
@@ -171,7 +313,7 @@ def predict():
         df = pd.DataFrame({
             'BUSINESS_PROJECT': [business_project],
             'VALUE_CHAIN_CATEGORY': [value_chain_cat],
-            'BORROWING_RELATIONSHIP': [borrrowing_relationship],
+            'BORROWING_RELATIONSHIP': [borrowing_relationship],
             'FRESH_LOAN_REQUEST': [fresh_loan_request],
             'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
             'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
@@ -198,13 +340,13 @@ def predict():
         prediction = loaded_model.predict(df)
 
         if prediction[0] == 1:
-            prediction_id = str(uuid.uuid4())
+            prediction_id = generate_unique_code()
             if 'user_id' in session:
                 user = User.query.get(session['user_id'])
                 user.prediction_id = prediction_id
                 db.session.commit()
             flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-            return render_template("approval.html", prediction_id=prediction_id)
+            return render_template("approval.html", prediction_id=prediction_id, user=user)
         else:
             flash("Your loan request is denied.")
             return render_template("disapproval.html")
@@ -241,7 +383,7 @@ def api_predict():
         # Receiving user inputs
         business_project = request.json.get('BUSINESS_PROJECT')
         value_chain_cat = request.json.get('VALUE_CHAIN_CATEGORY')
-        borrrowing_relationship = request.json.get('BORROWING_RELATIONSHIP')
+        borrowing_relationship = request.json.get('BORROWING_RELATIONSHIP')
         fresh_loan_request = request.json.get('FRESH_LOAN_REQUEST')
         request_submitted_to_bank = request.json.get('REQUEST_SUBMITTED_TO_BANK')
         feasibility_study_available = request.json.get('FEASIBILITY_STUDY_AVAILABLE')
@@ -250,7 +392,7 @@ def api_predict():
         df = pd.DataFrame(
         {'BUSINESS_PROJECT': [business_project],
          'VALUE_CHAIN_CATEGORY': [value_chain_cat],
-         'BORROWING_RELATIONSHIP': [borrrowing_relationship],
+         'BORROWING_RELATIONSHIP': [borrowing_relationship],
          'FRESH_LOAN_REQUEST': [fresh_loan_request],
          'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
          'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
@@ -281,6 +423,7 @@ def api_predict():
             return jsonify({'granted': 'your loan request has been granted'})
         else:
             return jsonify({'denied': 'your loan request is denied'})
+
 
 #users route 
 @app.route('/users')

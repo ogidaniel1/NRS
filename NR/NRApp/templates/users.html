@@ -13,17 +13,19 @@
         <table class="table table-striped">
             <thead>
                 <tr>
+                    <th>SN</th>
                     <th>Business Name</th>
                     <th>Business Address</th>
                     <th>Phone Number</th>
                     <th>Email</th>
                     <th>State</th>
-                    <th>AP ID</th>
+                    <th>Application ID</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
+                    <td>{{ user.id }}</td>
                     <td>{{ user.business_name }}</td>
                     <td>{{ user.business_address }}</td>
                     <td>{{ user.phone_number }}</td>
