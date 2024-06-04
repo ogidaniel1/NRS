@@ -257,12 +257,12 @@ def admin_required(f):
         return redirect(url_for('login'))
     return decorated_function
 
-
 #admin.............route
 
-@app.route('/admin/dashboard')
+@app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
+    
     return render_template('admin_dashboard.html')
 
 

@@ -19,17 +19,6 @@ db.session.add(admin_user)
 db.session.commit()
 
 
-# def admin_required(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         user_id = session.get('user_id')
-#         user = User.query.get(user_id)
-#         if user and user.is_admin:
-#             return f(*args, **kwargs)
-#         flash('You do not have permission to access this page.', 'danger')
-#         return redirect(url_for('login'))
-#     return decorated_function
-
 
 
 
