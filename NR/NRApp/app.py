@@ -129,7 +129,6 @@ class User(UserMixin, db.Model):
     PROPOSED_NEXT_STEPS = db.Column(db.Text)
 
 
-
 class Admin(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -238,6 +237,20 @@ def register():
         challenges = request.form.get('CHALLENGES')
         proposed_next_steps = request.form.get('PROPOSED_NEXT_STEPS')
 
+        #check if user email already exist
+               
+        existing_user = User.query.filter_by(business_name = business_name).first()
+        if existing_user:
+            flash('Business Name already registered!', 'danger')
+            return redirect(url_for('register'))
+        
+        existing_user = User.query.filter_by(email = email).first()
+        if existing_user:
+            flash('Email already registered!', 'danger')
+            return redirect(url_for('register'))
+        
+        #if no duplicates found, proceed
+        
         new_user = User(
             business_name=business_name,
             business_address=business_address,
@@ -332,6 +345,7 @@ def admin_dashboard():
 @app.route('/register_admin', methods=['GET', 'POST'])
 @admin_required
 def register_admin():
+
     if request.method == 'POST':
         admin_name = request.form.get('admin_name')
         admin_address = request.form.get('admin_address')
@@ -340,6 +354,21 @@ def register_admin():
         password = request.form.get('password')
         password_hash = generate_password_hash(password)
         is_admin = True  # Ensure the new user is an admin
+
+        #check if user email already exist
+        existing_admin = Admin.query.filter_by(email = email).first()
+        if existing_admin:
+            flash('Email already registered!', 'danger')
+            return redirect(url_for('register'))
+        
+        existing_admin = Admin.query.filter_by(admin_name = admin_name).first()
+        if existing_admin:
+            flash('Admin already registered!', 'danger')
+            return redirect(url_for('register'))
+        
+        
+        
+        #if no duplicates proceed....
 
         new_admin = Admin(
             admin_name=admin_name,
