@@ -9,6 +9,12 @@
             <div class="sidebar-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <span data-feather="file"></span>
+                            Admin Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link active" href="#searchUser" data-toggle="tab">
                             <span data-feather="home"></span>
                             Search User
@@ -40,7 +46,6 @@
                     </div>
                 {% endif %}
             {% endwith %}
-
             <div class="tab-content">
                 <div class="tab-pane active" id="searchUser">
                     <div class="card">
@@ -108,7 +113,7 @@
                     <td>{{ user.state }}</td>
                     <td>
                         <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Del</a>
+                        <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Delete</a>
                         
                     </td>
                 </tr>

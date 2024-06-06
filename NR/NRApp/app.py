@@ -41,7 +41,7 @@ def generate_unique_code():
 @app.before_request
 def before_request():
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(minutes=5)
+    app.permanent_session_lifetime = timedelta(minutes=10)
     session.modified = True
     session['last_activity'] = time.time()
 
@@ -50,11 +50,10 @@ def check_activity():
     if 'last_activity' in session:
         last_activity = session['last_activity']
         current_time = time.time()
-        if current_time - last_activity > 300:
+        if current_time - last_activity > 600:
             session.clear()
             return jsonify({'message': 'Session expired due to inactivity'}), 401
     return jsonify({'message': 'Activity checked'}), 200
-
 
 
 #wrapper................for login
@@ -79,8 +78,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-
+#approval session..........
 @app.route('/approve/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def approve(user_id):
@@ -194,6 +192,31 @@ def edit_user(user_id):
         return redirect(url_for('dashboard'))
 
     return render_template('edit_user.html', user=user)
+
+
+#deete user route and logic ..
+@app.route('/delete_user/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Check if the current user is an admin
+    if not session.get('is_admin'):
+        abort(403)  # Forbidden
+    
+    if request.method == 'POST':
+        # Proceed to delete the user if the method is POST
+        try:
+            db.session.delete(user)
+            db.session.commit()
+            flash('User deleted successfully.', 'success')
+        except Exception as e:
+            db.session.rollback() 
+            flash(f'Error deleting user: {str(e)}', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('confirm.html', user=user)
+
 
 
 # #homepage route...........
