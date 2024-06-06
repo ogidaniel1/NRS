@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
@@ -22,35 +21,50 @@
         </nav>
         <!-- Main content -->
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+            <!-- Flash messages -->
+            <div class="pt-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
             <div class="tab-content">
                 <div class="tab-pane active" id="searchUser">
                     <div class="card">
                         <div class="card-header bg-success text-white text-center">
+                            <h2>Search User</h2>
                         </div>
                         <div class="card-body">
-                            <form action="/search_user" method="post">
+                            <form action="{{ url_for('search') }}" method="post">
                                 <div class="form-group">
-                                    <label for="userEmail">Search by Email</label>
-                                    <input type="email" id="userEmail" name="userEmail" class="form-control" placeholder="Enter User Email">
+                                    <label for="search_term">Search by ID or Email</label>
+                                    <input type="text" id="search_term" name="search_term" class="form-control" placeholder="Enter User ID or Email" required>
                                 </div>
-                                <button type="submit" class="btn btn-success">Search</button>
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-success btn-lg">Search</button>
+                                </div>
                             </form>
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane"  id="predict">
+                <div class="tab-pane" id="predict">
                     <div class="card">
                         <div class="card-header bg-success text-white text-center">
                             <h2>Predict</h2>
                         </div>
                         <div class="card-body">
                             <p>Welcome to the prediction page!</p>
-                            
                             <a href="{{ url_for('prediction') }}">Click here to go to the prediction page</a>
-                                              
                             <!-- Prediction form or content goes here -->
-                            
-
                         </div>
                     </div>
                 </div>

@@ -1,12 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, abort,session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager,login_required, login_user, logout_user, UserMixin, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager,current_user
 from Crypto.Hash import SHA256
 from flask_migrate import Migrate
 from alembic import op
 import sqlalchemy as sa
 from functools import wraps
+# from app import User, Admin  # Ensure these are imported from your app
 
 #pip install pycryptodome
 # from pycryptodome.Hash import *
@@ -17,20 +18,67 @@ from functools import wraps
 import pandas as pd
 import joblib
 import pickle, sqlite3
-import uuid, random, string
+import uuid, random, string,time
+from datetime import timedelta
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
- 
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 
+ 
 
 #10 digit codes for the prediction aprroval page
 
 def generate_unique_code():
     return random.randint(1000000000, 9999999999)
+
+
+#logged out session................
+@app.before_request
+def before_request():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=5)
+    session.modified = True
+    session['last_activity'] = time.time()
+
+@app.route('/check_activity', methods=['POST'])
+def check_activity():
+    if 'last_activity' in session:
+        last_activity = session['last_activity']
+        current_time = time.time()
+        if current_time - last_activity > 300:
+            session.clear()
+            return jsonify({'message': 'Session expired due to inactivity'}), 401
+    return jsonify({'message': 'Activity checked'}), 200
+
+
+
+#wrapper................for login
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('You need to be logged in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+#wrapper................for admin login
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session or not session.get('is_admin'):
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 
 @app.route('/approve/<int:user_id>', methods=['GET', 'POST'])
@@ -82,56 +130,76 @@ class User(UserMixin, db.Model):
 
 
 
+class Admin(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    admin_name = db.Column(db.String(150), nullable=False)
+    admin_address = db.Column(db.String(150), nullable=False)
+    phone_number = db.Column(db.String(15), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
+
+
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     
     # Check if current user is admin
-    if not current_user.is_admin:
+    if not session['is_admin']:
         abort(403)  # Forbidden
+        
     
     if request.method == 'POST':
-
         # Update user information by admin officer
-        user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility')
-        user.NAME_OF_BANK = request.form.get('name_of_bank')
-        user.SECURITY_PROPOSED = request.form.get('security_proposed')
-        user.HIGHLIGHTS_OF_DISCUSSION = request.form.get('highlights_of_discussion')
-        user.RM_BM_NAME_PHONE_NUMBER = request.form.get('rm_bm_name_phone_number')
-        user.RM_BM_EMAIL = request.form.get('highlights_of_discussion')
-        user.STATUS_UPDATE = request.form.get('highlights_of_discussion')
-        user.CHALLENGES = request.form.get('highlights_of_discussion')
-        user.PROPOSED_NEXT_STEPS = request.form.get('highlights_of_discussion')
+        user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility') or None
+        user.NAME_OF_BANK = request.form.get('name_of_bank') or None
+        user.SECURITY_PROPOSED = request.form.get('security_proposed') or None
+        user.HIGHLIGHTS_OF_DISCUSSION = request.form.get('highlights_of_discussion') or None
+        user.RM_BM_NAME_PHONE_NUMBER = request.form.get('rm_bm_name_phone_number') or None
+        user.RM_BM_EMAIL = request.form.get('rm_bm_email') or None
+        user.STATUS_UPDATE = request.form.get('status_update') or None
+        user.CHALLENGES = request.form.get('challenges') or None
+        user.PROPOSED_NEXT_STEPS = request.form.get('proposed_next_steps') or None
 
-        #level 2  (registration page)
-        user.business_name = request.form.get('business_name')
-        user.business_address = request.form.get('business_address')
-        user.phone_number = request.form.get('phone_number')
-        user.email = request.form.get('email')
-        user.state = request.form.get('state')
-        user.password = request.form.get('password')
-      
-        #level 3 (prediction page)
-        user.business_project = request.form.get('business_project')
-        user.value_chain_cat = request.form.get('value_chain_cat')
-        user.borrowing_relationship = request.form.get('borrowing_relationship')
-        user.fresh_loan_request = request.form.get('fresh_loan_request')
-        user.request_submitted_to_bank = request.form.get('request_submitted_to_bank')
-        user.feasibility_study_available = request.form.get('feasibility_study_available')
-        user.proposed_facility_amount = request.form.get('proposed_facility_amount')
-            
+        # Level 2 (registration page)
+        user.business_name = request.form.get('business_name') or None
+        user.business_address = request.form.get('business_address') or None
+        user.phone_number = request.form.get('phone_number') or None
+        user.email = request.form.get('email') or None
+        user.state = request.form.get('state') or None
+        password = request.form.get('password')
+        if password:
+            user.password = generate_password_hash(password)
+
+        # Level 3 (prediction page)
+        user.business_project = request.form.get('business_project') or None
+        user.value_chain_cat = request.form.get('value_chain_cat') or None
+        user.borrowing_relationship = request.form.get('borrowing_relationship') or None
+        user.fresh_loan_request = request.form.get('fresh_loan_request') or None
+        user.request_submitted_to_bank = request.form.get('request_submitted_to_bank') or None
+        user.feasibility_study_available = request.form.get('feasibility_study_available') or None
+        user.proposed_facility_amount = request.form.get('proposed_facility_amount') or 0
+        if user.proposed_facility_amount:
+            try:
+                user.proposed_facility_amount = float(user.proposed_facility_amount)
+            except ValueError:
+                flash('Proposed facility amount must be a number.', 'danger')
+                return render_template('edit_user.html', user=user)
+        
         # Update other fields as needed...
         db.session.commit()
         flash('User information updated successfully.', 'success')
         return redirect(url_for('dashboard'))
-    
-    return render_template('edit_user.html', user=user) 
 
+    return render_template('edit_user.html', user=user)
 
 
 # #homepage route...........
 @app.route("/", methods=['GET', 'POST'])
+
 def home():
                 
         return render_template("login.html")
@@ -202,60 +270,55 @@ def register():
 #there is need to handle if user is already registered
     return render_template('register.html')
 
-        
-#wrapper..................
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('You need to be logged in to access this page.', 'warning')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 #login logic ..............
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        # Clear any existing session data
+        session.clear()
+        
         email = request.form.get('email')
         password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
         
+        # Check for user login
+        user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['email'] = user.email
-            session['is_admin'] = user.is_admin
+            session['is_admin'] = False
             flash('Login successful!', 'success')
-            if user.is_admin:
-                return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for('dashboard'))
-        else:
-            flash('Login failed. Check your credentials and try again.', 'danger')
+            return redirect(url_for('dashboard'))
+        
+        # Check for admin login
+        admin = Admin.query.filter_by(email=email).first()
+        if admin and check_password_hash(admin.password, password):
+            session['user_id'] = admin.id
+            session['email'] = admin.email
+            session['is_admin'] = True
+            flash('Login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        
+        # If login fails
+        flash('Login failed. Check your credentials and try again.', 'danger')
     
     return render_template('login.html')
+
+
 
 # #dashboard and function ..............
 
 @app.route('/dashboard')
 @login_required
+
 def dashboard():
     user = User.query.get(session['user_id'])
     return render_template('dashboard.html', user=user)
-
-
- 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = session.get('user_id')
-        user = User.query.get(user_id)
-        if user and user.is_admin:
-            return f(*args, **kwargs)
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('login'))
-    return decorated_function
 
 #admin.............route
 
@@ -265,6 +328,35 @@ def admin_dashboard():
     
     return render_template('admin_dashboard.html')
 
+# Admin registration route
+@app.route('/register_admin', methods=['GET', 'POST'])
+@admin_required
+def register_admin():
+    if request.method == 'POST':
+        admin_name = request.form.get('admin_name')
+        admin_address = request.form.get('admin_address')
+        phone_number = request.form.get('phone_number')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        password_hash = generate_password_hash(password)
+        is_admin = True  # Ensure the new user is an admin
+
+        new_admin = Admin(
+            admin_name=admin_name,
+            admin_address=admin_address,
+            phone_number=phone_number,
+            email=email,
+            password=password_hash,
+            is_admin=is_admin
+        )
+
+        db.session.add(new_admin)
+        db.session.commit()
+        
+        flash('New admin registered successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template('register_admin.html')
 
 
 # #prediction route from login dashboard and function ..............
@@ -274,6 +366,7 @@ def prediction():
     user = User.query.get(session['user_id'])
     return render_template('prediction.html', user=user)
     # return render_template('prediction.html')
+
 
 # Logout route
 @app.route('/logout')
@@ -285,16 +378,18 @@ def logout():
 #search.......#############....
 
 @app.route('/search', methods=['GET', 'POST'])
+@admin_required
+ 
 def search():
     if request.method == 'POST':
         
         search_term = request.form.get('search_term')
         user = User.query.filter((User.id == search_term) | (User.email == search_term)).first()
         if user:
-            return render_template('search_results.html', user=user)
+            return render_template('search.html', user=user)
         else:
             flash('No user found with that ID or email.', 'danger')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('admin_dashboard'))
     return render_template('search.html') 
 
 
@@ -340,16 +435,22 @@ def predict():
         prediction = loaded_model.predict(df)
 
         if prediction[0] == 1:
-            prediction_id = generate_unique_code()
             if 'user_id' in session:
                 user = User.query.get(session['user_id'])
-                user.prediction_id = prediction_id
-                db.session.commit()
-            flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-            return render_template("approval.html", prediction_id=prediction_id, user=user)
+                prediction_id = user.prediction_id
+                if prediction_id is None:
+                    prediction_id = generate_unique_code()
+                    user.prediction_id = prediction_id
+                    db.session.commit()
+                flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
+                return render_template("approval.html", prediction_id=prediction_id, user=user)
+            else:
+                flash("User not logged in.")
+                return render_template("login.html")  # Redirect user to login page
         else:
             flash("Your loan request is denied.")
             return render_template("disapproval.html")
+
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
@@ -430,6 +531,16 @@ def api_predict():
 def show_users():
     users = User.query.all()
     return render_template('users.html', users=users)
+
+
+#show all admins in table route 
+@app.route('/admins')
+def show_admins():
+    admins = Admin.query.all()
+    return render_template('admins.html', admins=admins)
    
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        print("Database initialized!")
     app.run(host='0.0.0.0', debug=True)

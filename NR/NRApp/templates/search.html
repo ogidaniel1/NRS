@@ -1,18 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Search User{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
+
 <div class="card">
     <div class="card-header bg-success text-white text-center">
         <h2>Search User</h2>
     </div>
     <div class="card-body">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <!-- Search Form -->
         <form method="POST" action="{{ url_for('search') }}">
             <div class="form-group">
                 <label for="search_term">Search by ID or Email</label>
                 <input type="text" class="form-control" id="search_term" name="search_term" required>
             </div>
-            <button type="submit" class="btn btn-success">Search</button>
+            <div class="text-center">
+                <button type="submit" class="btn btn-success btn-lg">Search</button>
+            </div>
         </form>
     </div>
 </div>
+
+<!-- Display User Details if found -->
+{% if user %}
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white text-center">
+        <h2>Search Results</h2>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Business Name</th>
+                    <th>Phone</th>
+                    <th>Business Address</th>
+                    <th>State</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.business_name }}</td>
+                    <td>{{  user.phone_number }}</td>
+                    <td>{{ user.business_address }}</td>
+                    <td>{{ user.state }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Del</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
