@@ -7,12 +7,12 @@ from flask_migrate import Migrate
 from alembic import op
 import sqlalchemy as sa
 from functools import wraps
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import generate_csrf
 # from app import User, Admin  # Ensure these are imported from your app
 
 #pip install pycryptodome
 # from pycryptodome.Hash import *
-
-
 
 
 import pandas as pd
@@ -23,9 +23,11 @@ from datetime import timedelta
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = 'your_secret_key_is_here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -148,7 +150,6 @@ def edit_user(user_id):
     if not session['is_admin']:
         abort(403)  # Forbidden
         
-    
     if request.method == 'POST':
         # Update user information by admin officer
         user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility') or None
@@ -232,8 +233,9 @@ def home():
         
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-
+    form = User()
     if request.method == 'POST':
+     
         business_name = request.form.get('business_name')
         business_address = request.form.get('business_address')
         phone_number = request.form.get('phone_number')
@@ -303,8 +305,10 @@ def register():
         db.session.commit()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
-#there is need to handle if user is already registered
-    return render_template('register.html')
+   #there is need to handle if user is already registered
+    
+    # csrf_token = generate_csrf()
+    return render_template('register.html', form=form)
 
 
 @login_manager.user_loader
@@ -316,6 +320,7 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+
         # Clear any existing session data
         session.clear()
         
@@ -343,7 +348,8 @@ def login():
         # If login fails
         flash('Login failed. Check your credentials and try again.', 'danger')
     
-    return render_template('login.html')
+    csrf_token = generate_csrf()
+    return render_template('login.html', csrf_token=csrf_token)
 
 
 
@@ -366,10 +372,11 @@ def admin_dashboard():
 
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
-@admin_required
+# @admin_required
 def register_admin():
 
     if request.method == 'POST':
+
         admin_name = request.form.get('admin_name')
         admin_address = request.form.get('admin_address')
         phone_number = request.form.get('phone_number')
@@ -389,8 +396,7 @@ def register_admin():
             flash('Admin already registered!', 'danger')
             return redirect(url_for('register'))
         
-        
-        
+                
         #if no duplicates proceed....
 
         new_admin = Admin(
@@ -408,7 +414,8 @@ def register_admin():
         flash('New admin registered successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('register_admin.html')
+    csrf_token = generate_csrf()
+    return render_template('register_admin.html', csrf_token=csrf_token)
 
 
 # #prediction route from login dashboard and function ..............
@@ -518,7 +525,9 @@ def api_login():
     else:
         return jsonify({'message': 'Invalid username or password'}), 401
 
+#api for dashboard 
 @app.route('/api/dashboard', methods=['GET'])
+
 def api_dashboard():
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
@@ -526,7 +535,7 @@ def api_dashboard():
     else:
         return jsonify({'message': 'You need to log in first.'}), 403
 
-   
+#api for  predict 
 @app.route("/api/predict", methods=['POST'], strict_slashes=False)
 
 def api_predict():
