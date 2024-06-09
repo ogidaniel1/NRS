@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, abort,session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager,current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager
 from Crypto.Hash import SHA256
 from flask_migrate import Migrate
 from alembic import op
@@ -90,7 +90,8 @@ def approve(user_id):
         db.session.commit()
         flash(f'User {user.email} has been approved with Prediction ID {user.prediction_id}.', 'success')
         return redirect(url_for('dashboard'))
-    return render_template('approval.html', user=user)
+    csrf_token = generate_csrf()
+    return render_template('approval.html', user=user, csrf_token=csrf_token)
      
 
 #The User class defines the database model.
@@ -367,8 +368,10 @@ def dashboard():
 @app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
-    
-    return render_template('admin_dashboard.html')
+
+    csrf_token = generate_csrf()
+
+    return render_template('admin_dashboard.html',csrf_token=csrf_token)
 
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
@@ -423,7 +426,8 @@ def register_admin():
 @login_required
 def prediction():
     user = User.query.get(session['user_id'])
-    return render_template('prediction.html', user=user)
+    csrf_token = generate_csrf()
+    return render_template('prediction.html', user=user, csrf_token=csrf_token)
     # return render_template('prediction.html')
 
 
@@ -440,21 +444,25 @@ def logout():
 @admin_required
  
 def search():
+
+    csrf_token = generate_csrf() 
     if request.method == 'POST':
         
         search_term = request.form.get('search_term')
-        user = User.query.filter((User.id == search_term) | (User.email == search_term)).first()
+        user = User.query.filter((User.prediction_id == search_term) | (User.email == search_term)).first()
         if user:
             return render_template('search.html', user=user)
         else:
             flash('No user found with that ID or email.', 'danger')
             return redirect(url_for('admin_dashboard'))
-    return render_template('search.html') 
+    csrf_token = generate_csrf() 
+    return render_template('search.html',  csrf_token = csrf_token) 
 
 
 #prediction function...................
 @app.route('/predict', methods=['POST', 'GET'])
 def predict():
+
     if request.method == 'POST':
         business_project = request.form.get('BUSINESS_PROJECT')
         value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
@@ -493,22 +501,32 @@ def predict():
         loaded_model = joblib.load('../notebook/xgboost.joblib')
         prediction = loaded_model.predict(df)
 
+        csrf_token = generate_csrf()  # Generate CSRF token outside of the condition
+
         if prediction[0] == 1:
             if 'user_id' in session:
                 user = User.query.get(session['user_id'])
-                prediction_id = user.prediction_id
-                if prediction_id is None:
-                    prediction_id = generate_unique_code()
-                    user.prediction_id = prediction_id
-                    db.session.commit()
-                flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-                return render_template("approval.html", prediction_id=prediction_id, user=user)
+                if user:  # Check if user exists
+                    prediction_id = user.prediction_id
+                    if prediction_id is None:
+                        prediction_id = generate_unique_code()
+                        user.prediction_id = prediction_id
+                        db.session.commit()
+                    flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
+                    return render_template("approval.html", user=user, prediction_id=prediction_id, csrf_token=csrf_token)
+                else:
+                    flash("User not found. Please log in again.")
+                    return render_template("login.html", csrf_token=csrf_token)  # Redirect user to login page
             else:
                 flash("User not logged in.")
-                return render_template("login.html")  # Redirect user to login page
+                return render_template("login.html", csrf_token=csrf_token)  # Redirect user to login page
         else:
             flash("Your loan request is denied.")
-            return render_template("disapproval.html")
+            return render_template("disapproval.html", csrf_token=csrf_token)  # Include csrf_token in disapproval page if needed
+    else:
+        # Handle GET request or any other method
+        flash("Invalid request method.")
+        return render_template("predict.html")  # Provide a template
 
 
 @app.route('/api/login', methods=['POST'])

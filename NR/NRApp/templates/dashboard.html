@@ -53,6 +53,7 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('search') }}" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <div class="form-group">
                                     <label for="search_term">Search by ID or Email</label>
                                     <input type="text" id="search_term" name="search_term" class="form-control" placeholder="Enter User ID or Email" required>

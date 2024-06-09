@@ -24,6 +24,7 @@
         {% endwith %}
         <!-- Search Form -->
         <form method="POST" action="{{ url_for('search') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="form-group">
                 <label for="search_term">Search by ID or Email</label>
                 <input type="text" class="form-control" id="search_term" name="search_term" required>
