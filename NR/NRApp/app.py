@@ -526,7 +526,7 @@ def predict():
     else:
         # Handle GET request or any other method
         flash("Invalid request method.")
-        return render_template("predict.html")  # Provide a template
+        return render_template("prediction.html")  # Provide a template
 
 
 @app.route('/api/login', methods=['POST'])
