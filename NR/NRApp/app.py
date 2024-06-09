@@ -14,7 +14,6 @@ from flask_wtf.csrf import generate_csrf
 #pip install pycryptodome
 # from pycryptodome.Hash import *
 
-
 import pandas as pd
 import joblib
 import pickle, sqlite3
@@ -145,8 +144,7 @@ class Admin(db.Model):
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-    
+    user = User.query.get_or_404(user_id) 
     # Check if current user is admin
     if not session['is_admin']:
         abort(403)  # Forbidden
@@ -192,7 +190,6 @@ def edit_user(user_id):
         db.session.commit()
         flash('User information updated successfully.', 'success')
         return redirect(url_for('dashboard'))
-
     return render_template('edit_user.html', user=user)
 
 
@@ -215,8 +212,7 @@ def delete_user(user_id):
         except Exception as e:
             db.session.rollback() 
             flash(f'Error deleting user: {str(e)}', 'danger')
-        return redirect(url_for('admin_dashboard'))
-    
+        return redirect(url_for('admin_dashboard'))  
     return render_template('confirm.html', user=user)
 
 
@@ -224,14 +220,12 @@ def delete_user(user_id):
 # #homepage route...........
 @app.route("/", methods=['GET', 'POST'])
 
-def home():
-                
+def home():           
         return render_template("login.html")
         
 
 #The /register route handles user registration, hashing the password before storing it.
-
-        
+     
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = User()
@@ -275,8 +269,7 @@ def register():
             flash('Email already registered!', 'danger')
             return redirect(url_for('register'))
         
-        #if no duplicates found, proceed
-        
+        #if no duplicates found, proceed   
         new_user = User(
             business_name=business_name,
             business_address=business_address,
@@ -306,8 +299,7 @@ def register():
         db.session.commit()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
-   #there is need to handle if user is already registered
-    
+   #there is need to handle if user is already registered  
     # csrf_token = generate_csrf()
     return render_template('register.html', form=form)
 
@@ -321,7 +313,6 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-
         # Clear any existing session data
         session.clear()
         
@@ -347,8 +338,7 @@ def login():
             return redirect(url_for('admin_dashboard'))
         
         # If login fails
-        flash('Login failed. Check your credentials and try again.', 'danger')
-    
+        flash('Login failed. Check your credentials and try again.', 'danger')  
     csrf_token = generate_csrf()
     return render_template('login.html', csrf_token=csrf_token)
 
@@ -368,9 +358,8 @@ def dashboard():
 @app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
-
+ 
     csrf_token = generate_csrf()
-
     return render_template('admin_dashboard.html',csrf_token=csrf_token)
 
 # Admin registration route
@@ -379,7 +368,6 @@ def admin_dashboard():
 def register_admin():
 
     if request.method == 'POST':
-
         admin_name = request.form.get('admin_name')
         admin_address = request.form.get('admin_address')
         phone_number = request.form.get('phone_number')
@@ -401,7 +389,6 @@ def register_admin():
         
                 
         #if no duplicates proceed....
-
         new_admin = Admin(
             admin_name=admin_name,
             admin_address=admin_address,
