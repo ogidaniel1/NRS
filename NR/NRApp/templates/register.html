@@ -50,7 +50,7 @@
                             {% endif %}
                         {% endwith %}
                         <form method="POST" action="{{ url_for('register') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {{ form.hidden_tag() }}
                             <div class="form-group">
                                 <label for="business_name">Business Name</label>
                                 <input type="text" class="form-control" id="business_name" name="business_name" required>

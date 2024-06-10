@@ -228,7 +228,7 @@ def delete_user(user_id):
             flash(f'Error deleting user: {str(e)}', 'danger')
         return redirect(url_for('admin_dashboard'))
     
-    return render_template('confirm.html', user=user)
+    return render_template('confirm.html', user=user, form=form)
 
 
 
@@ -244,7 +244,7 @@ def home():
         
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    csrf_token = generate_csrf()
+    form = PredictionForm()
     if request.method == 'POST':
      
         business_name = request.form.get('business_name')
@@ -316,8 +316,8 @@ def register():
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
    #there is need to handle if user is already registered  
-    # csrf_token = generate_csrf()
-    return render_template('register.html', csrf_token = csrf_token)
+     
+    return render_template('register.html', form=form)
 
 
 @login_manager.user_loader
@@ -374,9 +374,9 @@ def dashboard():
 @admin_required
 def admin_dashboard():
 
-    csrf_token = generate_csrf()
+    form = PredictionForm()
 
-    return render_template('admin_dashboard.html',csrf_token=csrf_token)
+    return render_template('admin_dashboard.html',form=form)
 
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
@@ -536,7 +536,7 @@ def predict():
     else:
         # Handle GET request or any other method
         flash("Invalid request method.")
-        return render_template("predict.html")  # Provide a template
+        return render_template("prediction.html", form=form)  # Provide a template
 
 
 @app.route('/api/login', methods=['POST'])
