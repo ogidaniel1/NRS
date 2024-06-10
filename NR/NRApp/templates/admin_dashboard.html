@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
@@ -54,7 +53,7 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('search') }}" method="post">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                {{ form.hidden_tag() }}
                                 <div class="form-group">
                                     <label for="search_term">Search by ID or Email</label>
                                     <input type="text" id="search_term" name="search_term" class="form-control" placeholder="Enter User ID or Email" required>
@@ -73,11 +72,7 @@
                         </div>
                         <div class="card-body">
                             <p>Welcome to the prediction page!</p>
-                            
                             <a href="{{ url_for('prediction') }}">Click here to go to the prediction page</a>
-                                              
-                            <!-- Prediction form or content goes here -->
-                            
                         </div>
                     </div>
                 </div>
@@ -109,13 +104,12 @@
                     <td>{{ user.id }}</td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.business_name }}</td>
-                    <td>{{  user.phone_number }}</td>
+                    <td>{{ user.phone_number }}</td>
                     <td>{{ user.business_address }}</td>
                     <td>{{ user.state }}</td>
                     <td>
                         <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Edit</a>
                         <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Delete</a>
-                        
                     </td>
                 </tr>
             </tbody>
@@ -123,5 +117,4 @@
     </div>
 </div>
 {% endif %}
-
 {% endblock %}

@@ -1,3 +1,8 @@
+from flask_wtf import CSRFProtect, FlaskForm
+from flask_wtf.csrf import generate_csrf
+from wtforms import SubmitField
+from wtforms import StringField, SubmitField, FloatField
+from wtforms.validators import DataRequired
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, abort,session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,10 +12,9 @@ from flask_migrate import Migrate
 from alembic import op
 import sqlalchemy as sa
 from functools import wraps
-from flask_wtf import CSRFProtect
-from flask_wtf.csrf import generate_csrf
-# from app import User, Admin  # Ensure these are imported from your app
 
+
+# from app import User, Admin  # Ensure these are imported from your app
 #pip install pycryptodome
 # from pycryptodome.Hash import *
 
@@ -142,11 +146,13 @@ class Admin(db.Model):
 
 
 
+
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
     
+    user = User.query.get_or_404(user_id)
+    csrf_token = generate_csrf()
     # Check if current user is admin
     if not session['is_admin']:
         abort(403)  # Forbidden
@@ -186,39 +192,47 @@ def edit_user(user_id):
                 user.proposed_facility_amount = float(user.proposed_facility_amount)
             except ValueError:
                 flash('Proposed facility amount must be a number.', 'danger')
-                return render_template('edit_user.html', user=user)
+                return render_template('edit_user.html', user=user,csrf_token=csrf_token)
         
         # Update other fields as needed...
         db.session.commit()
         flash('User information updated successfully.', 'success')
         return redirect(url_for('dashboard'))
+    # csrf_token = generate_csrf()
+    return render_template('edit_user.html', user=user, csrf_token=csrf_token)
 
-    return render_template('edit_user.html', user=user)
 
 
-#deete user route and logic ..
+ 
+#delete route............
+# Base form with CSRF protection enabled
+class MyBaseForm(FlaskForm):
+    class Meta:
+        csrf = True
+
+# Form for deleting a user
+class DeleteUserForm(MyBaseForm):
+    submit = SubmitField('Delete')
+
 @app.route('/delete_user/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    
-    # Check if the current user is an admin
-    if not session.get('is_admin'):
-        abort(403)  # Forbidden
-    
+    form = DeleteUserForm()
     if request.method == 'POST':
-        # Proceed to delete the user if the method is POST
-        try:
-            db.session.delete(user)
-            db.session.commit()
-            flash('User deleted successfully.', 'success')
-        except Exception as e:
-            db.session.rollback() 
-            flash(f'Error deleting user: {str(e)}', 'danger')
-        return redirect(url_for('admin_dashboard'))
-    
-    return render_template('confirm.html', user=user)
-
+        if form.validate_on_submit():
+            try:
+                db.session.delete(user)
+                db.session.commit()
+                flash('User deleted successfully.', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error deleting user: {str(e)}', 'danger')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid form data.', 'danger')
+            return redirect(url_for('admin_dashboard'))
+    return render_template('confirm.html', form=form, user=user)
 
 
 # #homepage route...........
@@ -230,11 +244,10 @@ def home():
         
 
 #The /register route handles user registration, hashing the password before storing it.
-
         
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = User()
+    csrf_token = generate_csrf()
     if request.method == 'POST':
      
         business_name = request.form.get('business_name')
@@ -309,7 +322,7 @@ def register():
    #there is need to handle if user is already registered
     
     # csrf_token = generate_csrf()
-    return render_template('register.html', form=form)
+    return render_template('register.html', csrf_token = csrf_token)
 
 
 @login_manager.user_loader
@@ -352,26 +365,23 @@ def login():
     csrf_token = generate_csrf()
     return render_template('login.html', csrf_token=csrf_token)
 
-
-
 # #dashboard and function ..............
-
 @app.route('/dashboard')
 @login_required
 
 def dashboard():
+
+    form = DeleteUserForm()
     user = User.query.get(session['user_id'])
-    return render_template('dashboard.html', user=user)
+    return render_template('dashboard.html', user=user, form=form)
 
 #admin.............route
 
 @app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
-
-    csrf_token = generate_csrf()
-
-    return render_template('admin_dashboard.html',csrf_token=csrf_token)
+    form = DeleteUserForm()
+    return render_template('admin_dashboard.html', form=form)
 
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
@@ -426,8 +436,9 @@ def register_admin():
 @login_required
 def prediction():
     user = User.query.get(session['user_id'])
-    csrf_token = generate_csrf()
-    return render_template('prediction.html', user=user, csrf_token=csrf_token)
+    # csrf_token = generate_csrf()
+    form = PredictionForm()
+    return render_template('prediction.html', user=user, form=form)
     # return render_template('prediction.html')
 
 
@@ -439,30 +450,36 @@ def logout():
     return redirect(url_for('login'))
     
 #search.......#############....
-
 @app.route('/search', methods=['GET', 'POST'])
 @admin_required
- 
 def search():
-
-    csrf_token = generate_csrf() 
+    form = DeleteUserForm()
     if request.method == 'POST':
-        
         search_term = request.form.get('search_term')
         user = User.query.filter((User.prediction_id == search_term) | (User.email == search_term)).first()
         if user:
-            return render_template('search.html', user=user)
+            return render_template('admin_dashboard.html', user=user, form=form)
         else:
             flash('No user found with that ID or email.', 'danger')
             return redirect(url_for('admin_dashboard'))
-    csrf_token = generate_csrf() 
-    return render_template('search.html',  csrf_token = csrf_token) 
+    return render_template('admin_dashboard.html', form=form)
 
 
-#prediction function...................
+
+class PredictionForm(FlaskForm):
+    business_project = StringField('Business Project', validators=[DataRequired()])
+    value_chain_cat = StringField('Value Chain Category', validators=[DataRequired()])
+    borrowing_relationship = StringField('Borrowing Relationship', validators=[DataRequired()])
+    fresh_loan_request = StringField('Fresh Loan Request', validators=[DataRequired()])
+    request_submitted_to_bank = StringField('Request Submitted to Bank', validators=[DataRequired()])
+    feasibility_study_available = StringField('Feasibility Study Available', validators=[DataRequired()])
+    proposed_facility_amount = FloatField('Proposed Facility Amount', validators=[DataRequired()])
+    submit = SubmitField('Predict')
+
 @app.route('/predict', methods=['POST', 'GET'])
+@login_required
 def predict():
-
+    form = PredictionForm()
     if request.method == 'POST':
         business_project = request.form.get('BUSINESS_PROJECT')
         value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
@@ -526,7 +543,8 @@ def predict():
     else:
         # Handle GET request or any other method
         flash("Invalid request method.")
-        return render_template("predict.html")  # Provide a template
+    
+    return render_template("prediction.html", form=form)
 
 
 @app.route('/api/login', methods=['POST'])

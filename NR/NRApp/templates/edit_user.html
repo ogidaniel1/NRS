@@ -23,7 +23,7 @@
     {% endwith %}
 
     <form method="POST">
-       
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <!-- Level 1 Fields -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">Business Information</div>
