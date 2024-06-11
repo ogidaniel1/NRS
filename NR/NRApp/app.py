@@ -145,27 +145,29 @@ class Admin(db.Model):
 
 
 
-
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
+    form = PredictionForm()
     user = User.query.get_or_404(user_id)
     
     # Check if current user is admin
     if not session['is_admin']:
         abort(403)  # Forbidden
-        
+
     if request.method == 'POST':
+
         # Update user information by admin officer
-        user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility') or None
-        user.NAME_OF_BANK = request.form.get('name_of_bank') or None
-        user.SECURITY_PROPOSED = request.form.get('security_proposed') or None
-        user.HIGHLIGHTS_OF_DISCUSSION = request.form.get('highlights_of_discussion') or None
-        user.RM_BM_NAME_PHONE_NUMBER = request.form.get('rm_bm_name_phone_number') or None
-        user.RM_BM_EMAIL = request.form.get('rm_bm_email') or None
-        user.STATUS_UPDATE = request.form.get('status_update') or None
-        user.CHALLENGES = request.form.get('challenges') or None
-        user.PROPOSED_NEXT_STEPS = request.form.get('proposed_next_steps') or None
+        user.PURPOSE_OF_FACILITY = request.form.get('purpose_of_facility')
+        user.NAME_OF_BANK = request.form.get('name_of_bank') 
+        user.SECURITY_PROPOSED = request.form.get('security_proposed') 
+        user.HIGHLIGHTS_OF_DISCUSSION = request.form.get('highlights_of_discussion') 
+        user.RM_BM_NAME_PHONE_NUMBER = request.form.get('rm_bm_name_phone_number') 
+        user.RM_BM_EMAIL = request.form.get('rm_bm_email') 
+        user.STATUS_UPDATE = request.form.get('status_update') 
+        user.CHALLENGES = request.form.get('challenges') 
+        user.PROPOSED_NEXT_STEPS = request.form.get('proposed_next_steps') 
+
 
         # Level 2 (registration page)
         user.business_name = request.form.get('business_name') or None
@@ -176,6 +178,7 @@ def edit_user(user_id):
         password = request.form.get('password')
         if password:
             user.password = generate_password_hash(password)
+
 
         # Level 3 (prediction page)
         user.business_project = request.form.get('business_project') or None
@@ -190,18 +193,17 @@ def edit_user(user_id):
                 user.proposed_facility_amount = float(user.proposed_facility_amount)
             except ValueError:
                 flash('Proposed facility amount must be a number.', 'danger')
-                return render_template('edit_user.html', user=user,csrf_token=csrf_token)
+                return render_template('edit_user.html', user=user,form=form)
         
         # Update other fields as needed...
         db.session.commit()
         flash('User information updated successfully.', 'success')
         return redirect(url_for('dashboard'))
 
-    return render_template('edit_user.html', user=user)
+    return render_template('edit_user.html', user=user,form=form)
 
 
 
- 
 #delete route............
 # Base form with CSRF protection enabled
 class MyBaseForm(FlaskForm):
@@ -231,12 +233,13 @@ def delete_user(user_id):
     return render_template('confirm.html', user=user, form=form)
 
 
-
 # #homepage route...........
 @app.route("/", methods=['GET', 'POST'])
 
-def home():           
-        return render_template("login.html")
+def home(): 
+        form = DeleteUserForm()
+                  
+        return render_template("login.html", form=form)
         
 
 #The /register route handles user registration, hashing the password before storing it.
@@ -328,6 +331,8 @@ def load_user(user_id):
 #login logic ..............
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    
+  
     if request.method == 'POST':
         # Clear any existing session data
         session.clear()
@@ -355,8 +360,8 @@ def login():
         
         # If login fails
         flash('Login failed. Check your credentials and try again.', 'danger')  
-    csrf_token = generate_csrf()
-    return render_template('login.html', csrf_token=csrf_token)
+    form = PredictionForm()
+    return render_template('login.html', form=form)
 
 # #dashboard and function ..............
 @app.route('/dashboard')
@@ -459,6 +464,7 @@ def search():
 
 
 
+
 class PredictionForm(FlaskForm):
     business_project = StringField('Business Project', validators=[DataRequired()])
     value_chain_cat = StringField('Value Chain Category', validators=[DataRequired()])
@@ -469,11 +475,14 @@ class PredictionForm(FlaskForm):
     proposed_facility_amount = FloatField('Proposed Facility Amount', validators=[DataRequired()])
     submit = SubmitField('Predict')
 
+#predict route....
+
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
 def predict():
     form = PredictionForm()
     if request.method == 'POST':
+
         business_project = request.form.get('BUSINESS_PROJECT')
         value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
         borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
@@ -482,6 +491,17 @@ def predict():
         feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
         proposed_facility_amount = float(request.form.get('PROPOSED_FACILITY_AMOUNT'))
 
+        # Save form data to session
+        session['form_data'] = {
+            'business_project': business_project,
+            'value_chain_cat': value_chain_cat,
+            'borrowing_relationship': borrowing_relationship,
+            'fresh_loan_request': fresh_loan_request,
+            'request_submitted_to_bank': request_submitted_to_bank,
+            'feasibility_study_available':feasibility_study_available ,
+            'proposed_facility_amount': proposed_facility_amount
+        }
+        #dataframe for model
         df = pd.DataFrame({
             'BUSINESS_PROJECT': [business_project],
             'VALUE_CHAIN_CATEGORY': [value_chain_cat],
@@ -491,12 +511,15 @@ def predict():
             'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
             'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
         })
-
         encoder_dicts = {
             'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
             'VALUE_CHAIN_CATEGORY': {
-                'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3,
-                'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5,
+                'MIDSTREAM': 0,
+                'PRE-UPSTREAM': 1,
+                'UPSTREAM': 2,
+                'DOWNSTREAM': 3,
+                'UPSTREAM AND MIDSTREAM': 4,
+                'MIDSTREAM AND DOWNSTREAM': 5,
                 'UPSTREAM AND DOWNSTREAM': 6
             },
             'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
@@ -511,32 +534,53 @@ def predict():
         loaded_model = joblib.load('../notebook/xgboost.joblib')
         prediction = loaded_model.predict(df)
 
-        csrf_token = generate_csrf()  # Generate CSRF token outside of the condition
-
         if prediction[0] == 1:
             if 'user_id' in session:
                 user = User.query.get(session['user_id'])
-                if user:  # Check if user exists
+                if user:
                     prediction_id = user.prediction_id
                     if prediction_id is None:
                         prediction_id = generate_unique_code()
-                        user.prediction_id = prediction_id
-                        db.session.commit()
+                    user.prediction_id = prediction_id
+                    # Create a new instance of the User model and add it to the database session
+                    new_user = User(
+                        business_project=business_project,
+                        value_chain_cat=value_chain_cat,
+                        borrowing_relationship=borrowing_relationship,
+                        fresh_loan_request=fresh_loan_request,
+                        request_submitted_to_bank=request_submitted_to_bank,
+                        proposed_facility_amount=proposed_facility_amount
+                    )
+                    db.session.add(new_user)
+                    db.session.commit()
                     flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-                    return render_template("approval.html", user=user, prediction_id=prediction_id, csrf_token=csrf_token)
+                    return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
                 else:
                     flash("User not found. Please log in again.")
-                    return render_template("login.html", csrf_token=csrf_token)  # Redirect user to login page
+                    return render_template("login.html", form=form)
             else:
                 flash("User not logged in.")
-                return render_template("login.html", csrf_token=csrf_token)  # Redirect user to login page
+                return render_template("login.html", form=form)
         else:
             flash("Your loan request is denied.")
-            return render_template("disapproval.html", csrf_token=csrf_token)  # Include csrf_token in disapproval page if needed
-    else:
-        # Handle GET request or any other method
-        flash("Invalid request method.")
-        return render_template("prediction.html", form=form)  # Provide a template
+
+            user = User.query.get(session['user_id'])
+
+            return render_template("disapproval.html", user=user, form=form) 
+    elif request.method == 'GET':
+        if 'form_data' in session:
+            form_data = session['form_data']
+            form.business_project.data = form_data['business_project']
+            form.value_chain_cat.data = form_data['value_chain_cat']
+            form.borrowing_relationship.data = form_data['borrowing_relationship']
+            form.fresh_loan_request.data = form_data['fresh_loan_request']
+            form.request_submitted_to_bank.data = form_data['request_submitted_to_bank']
+            form.proposed_facility_amount.data = form_data['proposed_facility_amount']
+
+    return render_template("prediction.html", form=form)
+
+
+
 
 
 @app.route('/api/login', methods=['POST'])
