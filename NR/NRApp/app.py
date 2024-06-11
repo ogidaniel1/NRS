@@ -476,13 +476,14 @@ class PredictionForm(FlaskForm):
     submit = SubmitField('Predict')
 
 #predict route....
-
+ 
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
 def predict():
-    form = PredictionForm()
+    form = PredictionForm()  # Create an instance of the PredictionForm class
+    
     if request.method == 'POST':
-
+        # Fetch the form data
         business_project = request.form.get('BUSINESS_PROJECT')
         value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
         borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
@@ -498,10 +499,11 @@ def predict():
             'borrowing_relationship': borrowing_relationship,
             'fresh_loan_request': fresh_loan_request,
             'request_submitted_to_bank': request_submitted_to_bank,
-            'feasibility_study_available':feasibility_study_available ,
+            'feasibility_study_available': feasibility_study_available,
             'proposed_facility_amount': proposed_facility_amount
         }
-        #dataframe for model
+
+        # Dataframe for model
         df = pd.DataFrame({
             'BUSINESS_PROJECT': [business_project],
             'VALUE_CHAIN_CATEGORY': [value_chain_cat],
@@ -541,17 +543,17 @@ def predict():
                     prediction_id = user.prediction_id
                     if prediction_id is None:
                         prediction_id = generate_unique_code()
-                    user.prediction_id = prediction_id
-                    # Create a new instance of the User model and add it to the database session
-                    new_user = User(
-                        business_project=business_project,
-                        value_chain_cat=value_chain_cat,
-                        borrowing_relationship=borrowing_relationship,
-                        fresh_loan_request=fresh_loan_request,
-                        request_submitted_to_bank=request_submitted_to_bank,
-                        proposed_facility_amount=proposed_facility_amount
-                    )
-                    db.session.add(new_user)
+                        user.prediction_id = prediction_id
+
+                    # Update existing user data
+                    user.business_project = business_project
+                    user.value_chain_cat = value_chain_cat
+                    user.borrowing_relationship = borrowing_relationship
+                    user.fresh_loan_request = fresh_loan_request
+                    user.request_submitted_to_bank = request_submitted_to_bank
+                    user.feasibility_study_available = feasibility_study_available
+                    user.proposed_facility_amount = proposed_facility_amount
+
                     db.session.commit()
                     flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
                     return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
@@ -563,13 +565,13 @@ def predict():
                 return render_template("login.html", form=form)
         else:
             flash("Your loan request is denied.")
-
             user = User.query.get(session['user_id'])
-
-            return render_template("disapproval.html", user=user, form=form) 
+            return render_template("disapproval.html", user=user, form=form)
+        
     elif request.method == 'GET':
         if 'form_data' in session:
             form_data = session['form_data']
+            form.feasibility_study_available.data = form_data['feasibility_study_available']
             form.business_project.data = form_data['business_project']
             form.value_chain_cat.data = form_data['value_chain_cat']
             form.borrowing_relationship.data = form_data['borrowing_relationship']
@@ -581,7 +583,7 @@ def predict():
 
 
 
-
+#API section
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
