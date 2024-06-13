@@ -477,117 +477,127 @@ class PredictionForm(FlaskForm):
 
 #predict route....
  
-@app.route('/predict', methods=['POST', 'GET'])
-@login_required
-def predict():
-    form = PredictionForm()  # Create an instance of the PredictionForm class
-    
-    if request.method == 'POST':
-        # Fetch the form data
-        business_project = request.form.get('BUSINESS_PROJECT')
-        value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
-        borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
-        fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
-        request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
-        feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
-        proposed_facility_amount = float(request.form.get('PROPOSED_FACILITY_AMOUNT'))
+@app.route("/api/predict", methods=['POST'], strict_slashes=False)
+def api_predict():
+    try:
+        # Check if all required fields are present
+        if not all(key in request.json for key in ['BUSINESS_PROJECT', 'VALUE_CHAIN_CATEGORY', 'BORROWING_RELATIONSHIP', 'FRESH_LOAN_REQUEST', 'REQUEST_SUBMITTED_TO_BANK', 'FEASIBILITY_STUDY_AVAILABLE', 'PROPOSED_FACILITY_AMOUNT']):
+            return jsonify({'error': 'Missing required fields'}), 400
 
-        # Save form data to session
-        session['form_data'] = {
-            'business_project': business_project,
-            'value_chain_cat': value_chain_cat,
-            'borrowing_relationship': borrowing_relationship,
-            'fresh_loan_request': fresh_loan_request,
-            'request_submitted_to_bank': request_submitted_to_bank,
-            'feasibility_study_available': feasibility_study_available,
-            'proposed_facility_amount': proposed_facility_amount
-        }
+        # Validate input data
+        business_project = request.json.get('BUSINESS_PROJECT')
+        value_chain_cat = request.json.get('VALUE_CHAIN_CATEGORY')
+        borrowing_relationship = request.json.get('BORROWING_RELATIONSHIP')
+        fresh_loan_request = request.json.get('FRESH_LOAN_REQUEST')
+        request_submitted_to_bank = request.json.get('REQUEST_SUBMITTED_TO_BANK')
+        feasibility_study_available = request.json.get('FEASIBILITY_STUDY_AVAILABLE')
+        proposed_facility_amount = float(request.json.get('PROPOSED_FACILITY_AMOUNT'))
 
-        # Dataframe for model
-        df = pd.DataFrame({
-            'BUSINESS_PROJECT': [business_project],
-            'VALUE_CHAIN_CATEGORY': [value_chain_cat],
-            'BORROWING_RELATIONSHIP': [borrowing_relationship],
-            'FRESH_LOAN_REQUEST': [fresh_loan_request],
-            'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
-            'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
-            'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
-        })
-        encoder_dicts = {
-            'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
-            'VALUE_CHAIN_CATEGORY': {
-                'MIDSTREAM': 0,
-                'PRE-UPSTREAM': 1,
-                'UPSTREAM': 2,
-                'DOWNSTREAM': 3,
-                'UPSTREAM AND MIDSTREAM': 4,
-                'MIDSTREAM AND DOWNSTREAM': 5,
-                'UPSTREAM AND DOWNSTREAM': 6
-            },
-            'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
-            'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
-            'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
-            'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
-        }
+        # Create dataframe
+        df = pd.DataFrame({'BUSINESS_PROJECT': [business_project], 'VALUE_CHAIN_CATEGORY': [value_chain_cat], 'BORROWING_RELATIONSHIP': [borrowing_relationship], 'FRESH_LOAN_REQUEST': [fresh_loan_request], 'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank], 'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available], 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]})
 
+        # Encode data
+        encoder_dicts = {'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1}, 'VALUE_CHAIN_CATEGORY': {'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3, 'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, 'UPSTREAM AND DOWNSTREAM': 6}, 'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1}, 'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1}, 'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1}, 'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}}
         for col, values in encoder_dicts.items():
             df[col].replace(values, inplace=True)
 
+        # Load model and make prediction
         loaded_model = joblib.load('../notebook/xgboost.joblib')
         prediction = loaded_model.predict(df)
 
+        # Return prediction result
         if prediction[0] == 1:
-            if 'user_id' in session:
-                user = User.query.get(session['user_id'])
-                if user:
-                    prediction_id = user.prediction_id
-                    if prediction_id is None:
-                        prediction_id = generate_unique_code()
-                        user.prediction_id = prediction_id
-
-                    # Update existing user data
-                    user.business_project = business_project
-                    user.value_chain_cat = value_chain_cat
-                    user.borrowing_relationship = borrowing_relationship
-                    user.fresh_loan_request = fresh_loan_request
-                    user.request_submitted_to_bank = request_submitted_to_bank
-                    user.feasibility_study_available = feasibility_study_available
-                    user.proposed_facility_amount = proposed_facility_amount
-
-                    db.session.commit()
-                    flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-                    return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
-                else:
-                    flash("User not found. Please log in again.")
-                    return render_template("login.html", form=form)
-            else:
-                flash("User not logged in.")
-                return render_template("login.html", form=form)
+            return jsonify({'granted': 'Your loan request has been granted'})
         else:
-            flash("Your loan request is denied.")
-            user = User.query.get(session['user_id'])
-            return render_template("disapproval.html", user=user, form=form)
-        
-    elif request.method == 'GET':
-        if 'form_data' in session:
-            form_data = session['form_data']
-            form.feasibility_study_available.data = form_data['feasibility_study_available']
-            form.business_project.data = form_data['business_project']
-            form.value_chain_cat.data = form_data['value_chain_cat']
-            form.borrowing_relationship.data = form_data['borrowing_relationship']
-            form.fresh_loan_request.data = form_data['fresh_loan_request']
-            form.request_submitted_to_bank.data = form_data['request_submitted_to_bank']
-            form.proposed_facility_amount.data = form_data['proposed_facility_amount']
+            return jsonify({'denied': 'Your loan request is denied'})
 
-    return render_template("prediction.html", form=form)
+    except Exception as e:
+        # Log error and return error response
+        logging.error(f'Error processing request: {e}')
+        return jsonify({'error': 'Error processing request'}), 500
 
 
 
 #API section
 
+#registeration using API
+@app.route('/api/register', methods=['POST'])
+
+def api_register():
+ 
+    data = request.get_json(force=True)
+    business_name = data.get('business_name')
+    business_address = data.get('business_address')
+    phone_number = data.get('phone_number')
+    email = data.get('email')
+    state = data.get('state')
+    password = data.get('password')
+    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+   
+    # Add additional fields
+    business_project = data.get('business_project')
+    value_chain_cat = data.get('value_chain_cat')
+    borrowing_relationship = data.get('borrowing_relationship')
+    fresh_loan_request = data.get('fresh_loan_request')
+    request_submitted_to_bank = data.get('request_submitted_to_bank')
+    feasibility_study_available = data.get('feasibility_study_available')
+    proposed_facility_amount = data.get('proposed_facility_amount')
+    purpose_of_facility = data.get('PURPOSE_OF_FACILITY')
+    name_of_bank = data.get('NAME_OF_BANK')
+    security_proposed = data.get('SECURITY_PROPOSED')
+    highlights_of_discussion = data.get('HIGHLIGHTS_OF_DISCUSSION')
+    rm_bm_name_phone_number = data.get('RM_BM_NAME_PHONE_NUMBER')
+    rm_bm_email = data.get('RM_BM_EMAIL')
+    status_update = data.get('STATUS_UPDATE')
+    challenges = data.get('CHALLENGES')
+    proposed_next_steps = data.get('PROPOSED_NEXT_STEPS')
+
+    # Check if user email already exists
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"error": "Email already registered!"}), 400
+
+    # Check if business name already exists
+    existing_user = User.query.filter_by(business_name=business_name).first()
+    if existing_user:
+        return jsonify({"error": "Business Name already registered!"}), 400
+
+    # If no duplicates found, proceed
+    new_user = User(
+        business_name=business_name,
+        business_address=business_address,
+        phone_number=phone_number,
+        email=email,
+        state=state,
+        password=hashed_password,
+        business_project=business_project,
+        value_chain_cat=value_chain_cat,
+        borrowing_relationship=borrowing_relationship,
+        fresh_loan_request=fresh_loan_request,
+        request_submitted_to_bank=request_submitted_to_bank,
+        feasibility_study_available=feasibility_study_available,
+        proposed_facility_amount=proposed_facility_amount,
+        PURPOSE_OF_FACILITY=purpose_of_facility,
+        NAME_OF_BANK=name_of_bank,
+        SECURITY_PROPOSED=security_proposed,
+        HIGHLIGHTS_OF_DISCUSSION=highlights_of_discussion,
+        RM_BM_NAME_PHONE_NUMBER=rm_bm_name_phone_number,
+        RM_BM_EMAIL=rm_bm_email,
+        STATUS_UPDATE=status_update,
+        CHALLENGES=challenges,
+        PROPOSED_NEXT_STEPS=proposed_next_steps
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"message": "Registration successful!"}), 201
+
+
+
+
+#login using ApI
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.get_json()
+    data = request.get_json(force = True)
     email = data.get('email')
     password = data.get('password')
     user = User.query.filter_by(email=email).first()
@@ -663,6 +673,7 @@ def api_predict():
 
 #users route 
 @app.route('/users')
+@admin_required
 def show_users():
     users = User.query.all()
     return render_template('users.html', users=users)
@@ -670,6 +681,7 @@ def show_users():
 
 #show all admins in table route 
 @app.route('/admins')
+@admin_required
 def show_admins():
     admins = Admin.query.all()
     return render_template('admins.html', admins=admins)
