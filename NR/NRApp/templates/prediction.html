@@ -9,71 +9,73 @@
         <div class="card-body">
             <form action="{{ url_for('predict') }}" method="post">
                 {{ form.hidden_tag() }}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Proposed Facility Amount</th>
-                            <th>Business Project</th>
-                            <th>Value Chain Category</th>
-                            <th>Borrowing Relationship</th>
-                            <th>Fresh Loan Request</th>
-                            <th>Request Submitted to Bank</th>
-                            <th>Feasibility Study Available</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <input type="number" step="0.01" name="PROPOSED_FACILITY_AMOUNT" required class="form-control" value="{{ PROPOSED_FACILITY_AMOUNT }}">
-                            </td>
-                            <td>
-                                <select name="BUSINESS_PROJECT" required class="form-control">
-                                    <option value="">Select Business Type</option>
-                                    <option value="EXISTING" {% if BUSINESS_PROJECT == 'EXISTING' %}selected{% endif %}>Existing</option>
-                                    <option value="NEW" {% if BUSINESS_PROJECT == 'NEW' %}selected{% endif %}>Fresh</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="VALUE_CHAIN_CATEGORY" required class="form-control">
-                                    <option value="">Select Category</option>
-                                    <option value="PRE-UPSTREAM" {% if VALUE_CHAIN_CATEGORY == 'PRE-UPSTREAM' %}selected{% endif %}>Pre-Upstream</option>
-                                    <option value="UPSTREAM" {% if VALUE_CHAIN_CATEGORY == 'UPSTREAM' %}selected{% endif %}>Upstream</option>
-                                    <option value="MIDSTREAM" {% if VALUE_CHAIN_CATEGORY == 'MIDSTREAM' %}selected{% endif %}>Midstream</option>
-                                    <option value="DOWNSTREAM" {% if VALUE_CHAIN_CATEGORY == 'DOWNSTREAM' %}selected{% endif %}>Downstream</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="BORROWING_RELATIONSHIP" required class="form-control">
-                                    <option value="">Select</option>
-                                    <option value="YES" {% if BORROWING_RELATIONSHIP == 'YES' %}selected{% endif %}>Yes</option>
-                                    <option value="NO" {% if BORROWING_RELATIONSHIP == 'NO' %}selected{% endif %}>No</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="FRESH_LOAN_REQUEST" required class="form-control">
-                                    <option value="">Select</option>
-                                    <option value="YES" {% if FRESH_LOAN_REQUEST == 'YES' %}selected{% endif %}>Yes</option>
-                                    <option value="NO" {% if FRESH_LOAN_REQUEST == 'NO' %}selected{% endif %}>No</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="REQUEST_SUBMITTED_TO_BANK" required class="form-control">
-                                    <option value="">Select</option>
-                                    <option value="YES" {% if REQUEST_SUBMITTED_TO_BANK == 'YES' %}selected{% endif %}>Yes</option>
-                                    <option value="NO" {% if REQUEST_SUBMITTED_TO_BANK == 'NO' %}selected{% endif %}>No</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="FEASIBILITY_STUDY_AVAILABLE" required class="form-control">
-                                    <option value="">Select</option>
-                                    <option value="YES" {% if FEASIBILITY_STUDY_AVAILABLE == 'YES' %}selected{% endif %}>Yes</option>
-                                    <option value="NO" {% if FEASIBILITY_STUDY_AVAILABLE == 'NO' %}selected{% endif %}>No</option>
-                                    <option value="NIL" {% if FEASIBILITY_STUDY_AVAILABLE == 'NIL' %}selected{% endif %}>Not Available</option>
-                                </select>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Proposed Facility Amount</th>
+                                <th>Business Project</th>
+                                <th>Value Chain Category</th>
+                                <th>Borrowing Relationship</th>
+                                <th>Fresh Loan Request</th>
+                                <th>Request Submitted to Bank</th>
+                                <th>Feasibility Study Available</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <input type="number" step="0.01" name="PROPOSED_FACILITY_AMOUNT" required class="form-control" value="{{ PROPOSED_FACILITY_AMOUNT }}">
+                                </td>
+                                <td>
+                                    <select name="BUSINESS_PROJECT" required class="form-control">
+                                        <option value="">Select Business Type</option>
+                                        <option value="EXISTING" {% if BUSINESS_PROJECT == 'EXISTING' %}selected{% endif %}>Existing</option>
+                                        <option value="NEW" {% if BUSINESS_PROJECT == 'NEW' %}selected{% endif %}>Fresh</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="VALUE_CHAIN_CATEGORY" required class="form-control">
+                                        <option value="">Select Category</option>
+                                        <option value="PRE-UPSTREAM" {% if VALUE_CHAIN_CATEGORY == 'PRE-UPSTREAM' %}selected{% endif %}>Pre-Upstream</option>
+                                        <option value="UPSTREAM" {% if VALUE_CHAIN_CATEGORY == 'UPSTREAM' %}selected{% endif %}>Upstream</option>
+                                        <option value="MIDSTREAM" {% if VALUE_CHAIN_CATEGORY == 'MIDSTREAM' %}selected{% endif %}>Midstream</option>
+                                        <option value="DOWNSTREAM" {% if VALUE_CHAIN_CATEGORY == 'DOWNSTREAM' %}selected{% endif %}>Downstream</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="BORROWING_RELATIONSHIP" required class="form-control">
+                                        <option value="">Select</option>
+                                        <option value="YES" {% if BORROWING_RELATIONSHIP == 'YES' %}selected{% endif %}>Yes</option>
+                                        <option value="NO" {% if BORROWING_RELATIONSHIP == 'NO' %}selected{% endif %}>No</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="FRESH_LOAN_REQUEST" required class="form-control">
+                                        <option value="">Select</option>
+                                        <option value="YES" {% if FRESH_LOAN_REQUEST == 'YES' %}selected{% endif %}>Yes</option>
+                                        <option value="NO" {% if FRESH_LOAN_REQUEST == 'NO' %}selected{% endif %}>No</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="REQUEST_SUBMITTED_TO_BANK" required class="form-control">
+                                        <option value="">Select</option>
+                                        <option value="YES" {% if REQUEST_SUBMITTED_TO_BANK == 'YES' %}selected{% endif %}>Yes</option>
+                                        <option value="NO" {% if REQUEST_SUBMITTED_TO_BANK == 'NO' %}selected{% endif %}>No</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="FEASIBILITY_STUDY_AVAILABLE" required class="form-control">
+                                        <option value="">Select</option>
+                                        <option value="YES" {% if FEASIBILITY_STUDY_AVAILABLE == 'YES' %}selected{% endif %}>Yes</option>
+                                        <option value="NO" {% if FEASIBILITY_STUDY_AVAILABLE == 'NO' %}selected{% endif %}>No</option>
+                                        <option value="NIL" {% if FEASIBILITY_STUDY_AVAILABLE == 'NIL' %}selected{% endif %}>Not Available</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div class="text-center">
                     <input type="submit" value="Predict" class="btn btn-success">
                     <input type="reset" value="Reset" class="btn btn-secondary">
