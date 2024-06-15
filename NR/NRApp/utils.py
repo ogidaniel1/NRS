@@ -5,15 +5,18 @@ def load_config():
     """
     Loads database configuration from environment variables.
 
+    Returns:
+        dict: A dictionary containing database configuration.
+
     Raises:
         KeyError: If a required environment variable is missing.
     """
-
+    # Load configuration from environment variables with defaults
     config = {
         'host': os.environ.get('DB_HOST', 'hoghidan1.mysql.pythonanywhere-services.com'),
-        'user': os.environ.get('DB_USER', 'hoghidan1'),
+        'user': os.environ.get('DB_USER', 'hoghidan1'),  # Note potential typo
         'password': os.environ.get('DB_PASSWORD', 'english92'),
-        'database': os.environ.get('DB_NAME', 'users'),
+        'database': os.environ.get('DB_NAME', 'hoghidan1$default'),
         'port': os.environ.get('DB_PORT', 3306)  # Default to 3306 for MySQL
     }
 
@@ -34,14 +37,27 @@ def generate_db_uri():
     Raises:
         KeyError: If a required environment variable is missing.
     """
-
     config = load_config()
+    
+    # Create connection URI with URL encoding for special characters
     params = urlencode({
-        'charset': 'utf8'  # Optional, include charset for clarity
+        'charset': 'utf8'  # Optional: include charset for clarity
     })
-    return f"mysql+pymysql://{config['user']}:{config['password']}@" \
-           f"{config['host']}:{config['port']}/{config['database']}?{params}"
+    
+    # Construct the database URI
+    db_uri = (
+        f"mysql+pymysql://{config['user']}:{config['password']}@"
+        f"{config['host']}:{config['port']}/{config['database']}?{params}"
+    )
 
+    return db_uri
+
+# Example usage:
+try:
+    db_uri = generate_db_uri()
+    print(db_uri)
+except KeyError as e:
+    print(f"Error: {e}")
 
 # install PyMySQL 
 # #generate database connect URI
