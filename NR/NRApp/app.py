@@ -12,7 +12,9 @@ from flask_migrate import Migrate
 from alembic import op
 import sqlalchemy as sa
 from functools import wraps
-
+import pymysql
+from utils import load_config, generate_db_uri
+ 
 
 # from app import User, Admin  # Ensure these are imported from your app
 #pip install pycryptodome
@@ -26,8 +28,19 @@ from datetime import timedelta
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_is_here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+
+# app.config['SECRET_KEY'] = 'your_secret_key_is_here'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+#  return f"mysql+pymysql://{config['USER']}:{config['PASSWORD']}@{config['HOST']}:{config['PORT']}/{config['DATABASE']}
+
+#connecting to an external database.
+# Store database credentials in environment variables
+app.config['SQLALCHEMY_DATABASE_URI'] = generate_db_uri()
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 250
+}
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -35,7 +48,6 @@ csrf.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
- 
 
 #10 digit codes for the prediction aprroval page
 
@@ -662,7 +674,7 @@ def api_register():
 @app.route('/api/login', methods=['POST'])
 @csrf.exempt
 def api_login():
-    data = request.get_json(force = True)
+    data = request.get_json(force=True)
     email = data.get('email')
     password = data.get('password')
     user = User.query.filter_by(email=email).first()
@@ -675,7 +687,7 @@ def api_login():
         return jsonify({'message': 'Invalid username or password'}), 401
 
 #api for dashboard 
-@app.route('/api/dashboard', methods=['GET'])
+@app.route('/api/dashboard', methods=['POST'])
 @csrf.exempt
 def api_dashboard():
     if 'user_id' in session:
