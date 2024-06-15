@@ -31,6 +31,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
+csrf.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -587,9 +588,8 @@ def predict():
 
 #registeration using API
 @app.route('/api/register', methods=['POST'])
-
+@csrf.exempt
 def api_register():
- 
     data = request.get_json(force=True)
     business_name = data.get('business_name')
     business_address = data.get('business_address')
@@ -658,9 +658,9 @@ def api_register():
 
 
 
-
 #login using ApI
 @app.route('/api/login', methods=['POST'])
+@csrf.exempt
 def api_login():
     data = request.get_json(force = True)
     email = data.get('email')
@@ -676,7 +676,7 @@ def api_login():
 
 #api for dashboard 
 @app.route('/api/dashboard', methods=['GET'])
-
+@csrf.exempt
 def api_dashboard():
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
@@ -687,6 +687,7 @@ def api_dashboard():
 
 #api for  predict 
 @app.route("/api/predict", methods=['POST'])
+@csrf.exempt
 def api_predict():
     try:
         # Get JSON data from request
