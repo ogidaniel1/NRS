@@ -29,12 +29,15 @@ from datetime import timedelta
 
 app = Flask(__name__)
 
-# app.config['SECRET_KEY'] = 'your_secret_key_is_here'
+
+#sqlite3 flask default db
+# app.config['SECRET_KEY'] = 'your_secret_key_here'
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-#  return f"mysql+pymysql://{config['USER']}:{config['PASSWORD']}@{config['HOST']}:{config['PORT']}/{config['DATABASE']}
+
 
 #connecting to an external database.
 # Store database credentials in environment variables
+app.config['SECRET_KEY'] = 'english92'
 app.config['SQLALCHEMY_DATABASE_URI'] = generate_db_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -759,6 +762,9 @@ def show_admins():
    
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-        print("Database initialized!")
+        try:
+            db.create_all()
+            print("Database initialized successfully.")
+        except Exception as e:
+            print(f"Error initializing database: {e}")
     app.run(host='0.0.0.0', debug=True)
