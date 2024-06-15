@@ -31,19 +31,19 @@ app = Flask(__name__)
 
 
 #sqlite3 flask default db
-# app.config['SECRET_KEY'] = 'your_secret_key_here'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SECRET_KEY'] = 'your_secret_key_here'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 
 
 #connecting to an external database.
 # Store database credentials in environment variables
-app.config['SECRET_KEY'] = 'english92'
-app.config['SQLALCHEMY_DATABASE_URI'] = generate_db_uri()
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    "pool_pre_ping": True,
-    "pool_recycle": 250
-}
+# app.config['SECRET_KEY'] = 'english92'
+# app.config['SQLALCHEMY_DATABASE_URI'] = generate_db_uri()
+# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+#     "pool_pre_ping": True,
+#     "pool_recycle": 250
+# }
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
