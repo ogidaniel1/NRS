@@ -1,7 +1,9 @@
 from flask_wtf import CSRFProtect, FlaskForm
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from wtforms.validators import DataRequired, Email, EqualTo,Length,ValidationError,Optional,Regexp
 from flask_wtf.csrf import generate_csrf
 from wtforms import SubmitField
-from wtforms import StringField, SubmitField, FloatField
+from wtforms import StringField, SubmitField, FloatField,PasswordField,SelectField
 from wtforms.validators import DataRequired
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, abort,session
 from flask_sqlalchemy import SQLAlchemy
@@ -9,11 +11,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager
 from Crypto.Hash import SHA256
 from flask_migrate import Migrate
+from werkzeug.datastructures import MultiDict
 from alembic import op
+from flask_wtf.csrf import CSRFError
 import sqlalchemy as sa
 from functools import wraps
-import pymysql
-from utils import load_config, generate_db_uri
+import pymysql, logging
+
+
+# from utils import load_config, generate_db_uri
  
 
 # from app import User, Admin  # Ensure these are imported from your app
@@ -23,7 +29,7 @@ from utils import load_config, generate_db_uri
 import pandas as pd
 import joblib
 import pickle, sqlite3
-import uuid, random, string,time
+import random, time
 from datetime import timedelta
 
 
@@ -56,6 +62,80 @@ login_manager.login_view = 'login'
 
 def generate_unique_code():
     return random.randint(1000000000, 9999999999)
+
+
+class DeleteUserForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Delete User')
+
+
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+
+    @classmethod
+    def from_json(cls, data):
+        # Implement logic to create a LoginForm object from JSON data
+        # For example:
+        email = data.get('email')
+        password = data.get('password')
+        return cls(email=email, password=password)
+    
+
+
+class RegistrationForm(FlaskForm):
+    class Meta:
+        csrf = False
+    business_name = StringField('Business Name', validators=[DataRequired(), Length(min=10, max=100)])
+    business_address = StringField('Business Address', validators=[DataRequired(), Length(min=10, max=100)])
+    phone_number = StringField('Phone Number', validators=[DataRequired(), Length(max=15), Regexp(regex='^\d+$', message="Phone number must contain only digits")])
+    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=100)])
+    state = SelectField('State', choices=[
+        ('Abia', 'Abia'), ('Adamawa', 'Adamawa'), ('Akwa Ibom', 'Akwa Ibom'), 
+        ('Anambra', 'Anambra'), ('Bauchi', 'Bauchi'), ('Bayelsa', 'Bayelsa'), 
+        ('Benue', 'Benue'), ('Borno', 'Borno'), ('Cross River', 'Cross River'), 
+        ('Delta', 'Delta'), ('Ebonyi', 'Ebonyi'), ('Edo', 'Edo'), ('Ekiti', 'Ekiti'), 
+        ('Enugu', 'Enugu'), ('Gombe', 'Gombe'), ('Imo', 'Imo'), ('Jigawa', 'Jigawa'), 
+        ('Kaduna', 'Kaduna'), ('Kano', 'Kano'), ('Katsina', 'Katsina'), ('Kebbi', 'Kebbi'), 
+        ('Kogi', 'Kogi'), ('Kwara', 'Kwara'), ('Lagos', 'Lagos'), ('Nasarawa', 'Nasarawa'), 
+        ('Niger', 'Niger'), ('Ogun', 'Ogun'), ('Ondo', 'Ondo'), ('Osun', 'Osun'), 
+        ('Oyo', 'Oyo'), ('Plateau', 'Plateau'), ('Rivers', 'Rivers'), ('Sokoto', 'Sokoto'), 
+        ('Taraba', 'Taraba'), ('Yobe', 'Yobe'), ('Zamfara', 'Zamfara'), ('FCT', 'FCT')
+    ], validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
+    business_project = StringField('Business Project', validators=[Optional(), Length(max=100)])
+    value_chain_cat = StringField('Value Chain Category', validators=[Optional(), Length(max=100)])
+    borrowing_relationship = StringField('Borrowing Relationship', validators=[Optional(), Length(max=100)])
+    fresh_loan_request = StringField('Fresh Loan Request', validators=[Optional(), Length(max=100)])
+    request_submitted_to_bank = StringField('Request Submitted to Bank', validators=[Optional(), Length(max=100)])
+    feasibility_study_available = StringField('Feasibility Study Available', validators=[Optional(), Length(max=100)])
+    proposed_facility_amount = FloatField('Proposed Facility Amount', validators=[Optional()])
+    purpose_of_facility = StringField('Purpose of Facility', validators=[Optional(), Length(max=255)])
+    name_of_bank = StringField('Name of Bank', validators=[Optional(), Length(max=255)])
+    security_proposed = StringField('Security Proposed', validators=[Optional(), Length(max=255)])
+    highlights_of_discussion = StringField('Highlights of Discussion', validators=[Optional()])
+    rm_bm_name_phone_number = StringField('RM/BM Name and Phone Number', validators=[Optional(), Length(max=100)])
+    rm_bm_email = StringField('RM/BM Email', validators=[Optional(), Email(), Length(max=100)])
+    status_update = StringField('Status Update', validators=[Optional()])
+    challenges = StringField('Challenges', validators=[Optional()])
+    proposed_next_steps = StringField('Proposed Next Steps', validators=[Optional()])
+    submit = SubmitField('Register')
+
+
+def validate_email(self, field):
+        if not field.data.endswith('@nrs.com'):
+            raise ValidationError('Email must have the domain "@nrs.com".')
+
+class RegisterAdminForm(FlaskForm):
+    admin_name = StringField('Name', validators=[DataRequired(), Length(min=2, max=50)])
+    admin_address = StringField('Address', validators=[DataRequired(), Length(min=2, max=100)])
+    phone_number = StringField('Phone Number', validators=[DataRequired(), Length(max=15), Regexp(regex='^\d+$', message="Phone number must contain only digits")])
+    email = StringField('Email', validators=[DataRequired(), Email(), validate_email])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Register')
 
 
 #logged out session................
@@ -138,15 +218,20 @@ class User(UserMixin, db.Model):
 
     #other data to be provided updates by officer 
 
-    PURPOSE_OF_FACILITY = db.Column(db.String(100), nullable=True)
-    NAME_OF_BANK = db.Column(db.String(100), nullable=True)
-    SECURITY_PROPOSED = db.Column(db.String(100), nullable=True)
-    HIGHLIGHTS_OF_DISCUSSION = db.Column(db.Text)
-    RM_BM_NAME_PHONE_NUMBER = db.Column(db.String(100), nullable=True)
-    RM_BM_EMAIL = db.Column(db.String(100), nullable=True)
-    STATUS_UPDATE = db.Column(db.Text)
-    CHALLENGES = db.Column(db.Text)
-    PROPOSED_NEXT_STEPS = db.Column(db.Text)
+    purpose_of_facility = db.Column(db.String(255), nullable=True)
+    name_of_bank = db.Column(db.String(100), nullable=True)
+    security_proposed = db.Column(db.String(100), nullable=True)
+    highlights_of_discussion = db.Column(db.Text)
+    rm_bm_name_phone_number = db.Column(db.String(100), nullable=True)
+    rm_bm_email = db.Column(db.String(100), nullable=True)
+    status_update = db.Column(db.Text)
+    challenges = db.Column(db.Text)
+    proposed_next_steps = db.Column(db.Text)
+
+
+class SearchForm(FlaskForm):
+    search_term = StringField('Search Term', validators=[DataRequired()])
+    submit = SubmitField('Search')
 
 
 class Admin(db.Model):
@@ -159,6 +244,16 @@ class Admin(db.Model):
     password = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
 
+
+class PredictionForm(FlaskForm):
+    BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
+    VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
+    BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    FRESH_LOAN_REQUEST = SelectField('Fresh Loan Request', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    REQUEST_SUBMITTED_TO_BANK = SelectField('Request Submitted to Bank', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    FEASIBILITY_STUDY_AVAILABLE = SelectField('Feasibility Study Available', choices=[('NO', 'No'), ('YES', 'Yes'), ('NIL', 'Not Available')], validators=[DataRequired()])
+    PROPOSED_FACILITY_AMOUNT = FloatField('Proposed Facility Amount', validators=[DataRequired()])
+    submit = SubmitField('Predict')
 
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
@@ -251,91 +346,89 @@ def delete_user(user_id):
 
 # #homepage route...........
 @app.route("/", methods=['GET', 'POST'])
-
-def home(): 
-        form = DeleteUserForm()
-                  
-        return render_template("login.html", form=form)
+def home():
+        
+        return redirect(url_for('login'))
+        # return render_template("login.html")
         
 
 #The /register route handles user registration, hashing the password before storing it.
 
-        
 @app.route('/register', methods=['GET', 'POST'])
+@csrf.exempt
 def register():
-    form = PredictionForm()
-    if request.method == 'POST':
-     
-        business_name = request.form.get('business_name')
-        business_address = request.form.get('business_address')
-        phone_number = request.form.get('phone_number')
-        email = request.form.get('email')
-        state = request.form.get('state')
-        password = request.form.get('password')
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    form = RegistrationForm(csrf_enabled=False)  # Disable CSRF for this form
 
-        # Add additional fields
-        business_project = request.form.get('business_project')  # Ensure this field is populated
-        value_chain_cat = request.form.get('value_chain_cat')
-        borrowing_relationship = request.form.get('borrowing_relationship')
-        fresh_loan_request = request.form.get('fresh_loan_request')
-        request_submitted_to_bank = request.form.get('request_submitted_to_bank')
-        feasibility_study_available = request.form.get('feasibility_study_available')
-        proposed_facility_amount = request.form.get('proposed_facility_amount')
-        purpose_of_facility = request.form.get('PURPOSE_OF_FACILITY')
-        name_of_bank = request.form.get('NAME_OF_BANK')
-        security_proposed = request.form.get('SECURITY_PROPOSED')
-        highlights_of_discussion = request.form.get('HIGHLIGHTS_OF_DISCUSSION')
-        rm_bm_name_phone_number = request.form.get('RM_BM_NAME_PHONE_NUMBER')
-        rm_bm_email = request.form.get('RM_BM_EMAIL')
-        status_update = request.form.get('STATUS_UPDATE')
-        challenges = request.form.get('CHALLENGES')
-        proposed_next_steps = request.form.get('PROPOSED_NEXT_STEPS')
+    if form.validate_on_submit():
+        try:
+            business_name = form.business_name.data
+            business_address = form.business_address.data
+            phone_number = form.phone_number.data
+            email = form.email.data
+            state = form.state.data
+            password = form.password.data
+            confirm_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        #check if user email already exist
-               
-        existing_user = User.query.filter_by(business_name = business_name).first()
-        if existing_user:
-            flash('Business Name already registered!', 'danger')
+            # Additional fields
+            business_project = form.business_project.data
+            value_chain_cat = form.value_chain_cat.data
+            borrowing_relationship = form.borrowing_relationship.data
+            fresh_loan_request = form.fresh_loan_request.data
+            request_submitted_to_bank = form.request_submitted_to_bank.data
+            feasibility_study_available = form.feasibility_study_available.data
+            proposed_facility_amount = form.proposed_facility_amount.data
+            purpose_of_facility = form.purpose_of_facility.data
+            name_of_bank = form.name_of_bank.data
+            security_proposed = form.security_proposed.data
+            highlights_of_discussion = form.highlights_of_discussion.data
+            rm_bm_name_phone_number = form.rm_bm_name_phone_number.data
+            rm_bm_email = form.rm_bm_email.data
+            status_update = form.status_update.data
+            challenges = form.challenges.data
+            proposed_next_steps = form.proposed_next_steps.data
+
+            # Check for existing user
+            if User.query.filter_by(email=email).first():
+                flash('Email already registered!', 'danger')
+                return redirect(url_for('register'))
+            if User.query.filter_by(business_name=business_name).first():
+                flash('Business Name already registered!', 'danger')
+                return redirect(url_for('register'))
+
+            # Create and save new user
+            new_user = User(
+                business_name=business_name,
+                business_address=business_address,
+                phone_number=phone_number,
+                email=email,
+                state=state,
+                password=confirm_password,
+                business_project=business_project,
+                value_chain_cat=value_chain_cat,
+                borrowing_relationship=borrowing_relationship,
+                fresh_loan_request=fresh_loan_request,
+                request_submitted_to_bank=request_submitted_to_bank,
+                feasibility_study_available=feasibility_study_available,
+                proposed_facility_amount=proposed_facility_amount,
+                purpose_of_facility=purpose_of_facility,
+                name_of_bank=name_of_bank,
+                security_proposed=security_proposed,
+                highlights_of_discussion=highlights_of_discussion,
+                rm_bm_name_phone_number=rm_bm_name_phone_number,
+                rm_bm_email=rm_bm_email,
+                status_update=status_update,
+                challenges=challenges,
+                proposed_next_steps=proposed_next_steps
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful!', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
             return redirect(url_for('register'))
-        
-        existing_user = User.query.filter_by(email = email).first()
-        if existing_user:
-            flash('Email already registered!', 'danger')
-            return redirect(url_for('register'))
-        
-        #if no duplicates found, proceed   
-        new_user = User(
-            business_name=business_name,
-            business_address=business_address,
-            phone_number=phone_number,
-            email=email,
-            state=state,
-            password=hashed_password,
-            business_project=business_project,
-            value_chain_cat=value_chain_cat,
-            borrowing_relationship=borrowing_relationship,
-            fresh_loan_request=fresh_loan_request,
-            request_submitted_to_bank=request_submitted_to_bank,
-            feasibility_study_available=feasibility_study_available,
-            proposed_facility_amount=proposed_facility_amount,
-            PURPOSE_OF_FACILITY=purpose_of_facility,
-            NAME_OF_BANK=name_of_bank,
-            SECURITY_PROPOSED=security_proposed,
-            HIGHLIGHTS_OF_DISCUSSION=highlights_of_discussion,
-            RM_BM_NAME_PHONE_NUMBER=rm_bm_name_phone_number,
-            RM_BM_EMAIL=rm_bm_email,
-            STATUS_UPDATE=status_update,
-            CHALLENGES=challenges,
-            PROPOSED_NEXT_STEPS=proposed_next_steps
-        )
 
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Registration successful!', 'success')
-        return redirect(url_for('login'))
-   #there is need to handle if user is already registered  
-     
+    # Render form with validation errors (if any)
     return render_template('register.html', form=form)
 
 
@@ -344,18 +437,16 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-#login logic ..............
 @app.route('/login', methods=['GET', 'POST'])
+@csrf.exempt
 def login():
-    
-  
-    if request.method == 'POST':
+
+    form = LoginForm()
+    if form.validate_on_submit():
         # Clear any existing session data
         session.clear()
-        
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
+        email = form.email.data
+        password = form.password.data
         # Check for user login
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
@@ -375,9 +466,10 @@ def login():
             return redirect(url_for('admin_dashboard'))
         
         # If login fails
-        flash('Login failed. Check your credentials and try again.', 'danger')  
-    form = PredictionForm()
+        flash('Login failed. Check your credentials and try again.', 'danger')
+    
     return render_template('login.html', form=form)
+
 
 # #dashboard and function ..............
 @app.route('/dashboard')
@@ -391,59 +483,69 @@ def dashboard():
 
 #admin.............route
 
-@app.route('/admin_dashboard')
+@app.route('/admin_dashboard', methods=['GET', 'POST'])
 @admin_required
 def admin_dashboard():
-
     form = PredictionForm()
+    search_form = SearchForm()  # Assuming you have a SearchForm class for the search functionality
+    
+    # Handle search form submission
+    if search_form.validate_on_submit():
+        search_term = search_form.search_term.data
+        user = User.query.filter((User.id == search_term) | (User.email == search_term)).first()
+        if user:
+            return render_template('admin_dashboard.html', form=form, search_form=search_form, user=user)
+        else:
+            flash('User not found', 'danger')
+            return render_template('admin_dashboard.html', form=form, search_form=search_form)
+    
+    return render_template('admin_dashboard.html', form=form, search_form=search_form)
 
-    return render_template('admin_dashboard.html',form=form)
 
+# Admin registration route
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
 # @admin_required
 def register_admin():
 
-    if request.method == 'POST':
-        admin_name = request.form.get('admin_name')
-        admin_address = request.form.get('admin_address')
-        phone_number = request.form.get('phone_number')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        password_hash = generate_password_hash(password)
+    form = RegisterAdminForm()
+    if form.validate_on_submit():
+        admin_name = form.admin_name.data
+        admin_address = form.admin_address.data
+        phone_number = form.phone_number.data
+        email = form.email.data
+        password = form.password.data
+        confirm_password = generate_password_hash(password)
         is_admin = True  # Ensure the new user is an admin
 
-        #check if user email already exist
-        existing_admin = Admin.query.filter_by(email = email).first()
+        # Check if user email already exists
+        existing_admin = Admin.query.filter_by(email=email).first()
         if existing_admin:
             flash('Email already registered!', 'danger')
-            return redirect(url_for('register'))
-        
-        existing_admin = Admin.query.filter_by(admin_name = admin_name).first()
+            return redirect(url_for('register_admin'))
+
+        existing_admin = Admin.query.filter_by(admin_name=admin_name).first()
         if existing_admin:
             flash('Admin already registered!', 'danger')
-            return redirect(url_for('register'))
-        
-                
-        #if no duplicates proceed....
+            return redirect(url_for('register_admin'))
+
+        # If no duplicates proceed...
         new_admin = Admin(
             admin_name=admin_name,
             admin_address=admin_address,
             phone_number=phone_number,
             email=email,
-            password=password_hash,
+            password=confirm_password,
             is_admin=is_admin
         )
 
         db.session.add(new_admin)
         db.session.commit()
-        
+
         flash('New admin registered successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    csrf_token = generate_csrf()
-    return render_template('register_admin.html', csrf_token=csrf_token)
-
+    return render_template('register_admin.html', form=form)
 
 # #prediction route from login dashboard and function ..............
 @app.route('/prediction')
@@ -464,49 +566,39 @@ def logout():
     return redirect(url_for('login'))
     
 #search.......#############....
+
 @app.route('/search', methods=['GET', 'POST'])
 @admin_required
 def search():
-    form = DeleteUserForm()
-    if request.method == 'POST':
-        search_term = request.form.get('search_term')
+    search_form = SearchForm()
+    form = PredictionForm()
+    if search_form.validate_on_submit():
+        search_term = search_form.search_term.data
         user = User.query.filter((User.prediction_id == search_term) | (User.email == search_term)).first()
         if user:
-            return render_template('admin_dashboard.html', user=user, form=form)
+            return render_template('admin_dashboard.html', form=form, search_form=search_form, user=user)
         else:
             flash('No user found with that ID or email.', 'danger')
             return redirect(url_for('admin_dashboard'))
-    return render_template('admin_dashboard.html', form=form)
+    return render_template('admin_dashboard.html', form=form, search_form=search_form)
 
 
-
-
-class PredictionForm(FlaskForm):
-    business_project = StringField('Business Project', validators=[DataRequired()])
-    value_chain_cat = StringField('Value Chain Category', validators=[DataRequired()])
-    borrowing_relationship = StringField('Borrowing Relationship', validators=[DataRequired()])
-    fresh_loan_request = StringField('Fresh Loan Request', validators=[DataRequired()])
-    request_submitted_to_bank = StringField('Request Submitted to Bank', validators=[DataRequired()])
-    feasibility_study_available = StringField('Feasibility Study Available', validators=[DataRequired()])
-    proposed_facility_amount = FloatField('Proposed Facility Amount', validators=[DataRequired()])
-    submit = SubmitField('Predict')
 
 #predict route....
- 
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
 def predict():
     form = PredictionForm()  # Create an instance of the PredictionForm class
     
-    if request.method == 'POST':
+    if form.validate_on_submit():
         # Fetch the form data
-        business_project = request.form.get('BUSINESS_PROJECT')
-        value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
-        borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
-        fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
-        request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
-        feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
-        proposed_facility_amount = float(request.form.get('PROPOSED_FACILITY_AMOUNT'))
+        business_project = form.BUSINESS_PROJECT.data
+        value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
+        borrowing_relationship = form.BORROWING_RELATIONSHIP.data
+        fresh_loan_request = form.FRESH_LOAN_REQUEST.data
+        request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
+        feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
+        proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
 
         # Save form data to session
         session['form_data'] = {
@@ -553,32 +645,28 @@ def predict():
         prediction = loaded_model.predict(df)
 
         if prediction[0] == 1:
-            if 'user_id' in session:
-                user = User.query.get(session['user_id'])
-                if user:
-                    prediction_id = user.prediction_id
-                    if prediction_id is None:
-                        prediction_id = generate_unique_code()
-                        user.prediction_id = prediction_id
+            user = User.query.get(session['user_id'])
+            if user:
+                prediction_id = user.prediction_id
+                if prediction_id is None:
+                    prediction_id = generate_unique_code()
+                    user.prediction_id = prediction_id
 
-                    # Update existing user data
-                    user.business_project = business_project
-                    user.value_chain_cat = value_chain_cat
-                    user.borrowing_relationship = borrowing_relationship
-                    user.fresh_loan_request = fresh_loan_request
-                    user.request_submitted_to_bank = request_submitted_to_bank
-                    user.feasibility_study_available = feasibility_study_available
-                    user.proposed_facility_amount = proposed_facility_amount
+                # Update existing user data
+                user.business_project = business_project
+                user.value_chain_cat = value_chain_cat
+                user.borrowing_relationship = borrowing_relationship
+                user.fresh_loan_request = fresh_loan_request
+                user.request_submitted_to_bank = request_submitted_to_bank
+                user.feasibility_study_available = feasibility_study_available
+                user.proposed_facility_amount = proposed_facility_amount
 
-                    db.session.commit()
-                    flash(f"Your loan request has been granted. Your prediction ID is {prediction_id}.")
-                    return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
-                else:
-                    flash("User not found. Please log in again.")
-                    return render_template("login.html", form=form)
+                db.session.commit()
+                flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
+                return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
             else:
-                flash("User not logged in.")
-                return render_template("login.html", form=form)
+                flash("User not found. Please log in again.")
+                return redirect(url_for('login'))
         else:
             flash("Your loan request is denied.")
             user = User.query.get(session['user_id'])
@@ -587,162 +675,230 @@ def predict():
     elif request.method == 'GET':
         if 'form_data' in session:
             form_data = session['form_data']
-            form.feasibility_study_available.data = form_data['feasibility_study_available']
-            form.business_project.data = form_data['business_project']
-            form.value_chain_cat.data = form_data['value_chain_cat']
-            form.borrowing_relationship.data = form_data['borrowing_relationship']
-            form.fresh_loan_request.data = form_data['fresh_loan_request']
-            form.request_submitted_to_bank.data = form_data['request_submitted_to_bank']
-            form.proposed_facility_amount.data = form_data['proposed_facility_amount']
+            form.BUSINESS_PROJECT.data = form_data['business_project']
+            form.VALUE_CHAIN_CATEGORY.data = form_data['value_chain_cat']
+            form.BORROWING_RELATIONSHIP.data = form_data['borrowing_relationship']
+            form.FRESH_LOAN_REQUEST.data = form_data['fresh_loan_request']
+            form.REQUEST_SUBMITTED_TO_BANK.data = form_data['request_submitted_to_bank']
+            form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
+            form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
+
 
     return render_template("prediction.html", form=form)
 
-
-
-#API section
-
-#registeration using API
+#API register route 
 @app.route('/api/register', methods=['POST'])
 @csrf.exempt
 def api_register():
-    data = request.get_json(force=True)
-    business_name = data.get('business_name')
-    business_address = data.get('business_address')
-    phone_number = data.get('phone_number')
-    email = data.get('email')
-    state = data.get('state')
-    password = data.get('password')
-    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    data = request.get_json()  # Parse JSON data from request
+    
+    if data:
+        form = RegistrationForm(csrf_enabled=False)  # Disable CSRF for API use
+        
+        # Manually populate form fields with JSON data
+        form.business_name.data = data.get('business_name')
+        form.business_address.data = data.get('business_address')
+        form.phone_number.data = data.get('phone_number')
+        form.email.data = data.get('email')
+        form.state.data = data.get('state')
+        form.password.data = data.get('password')
+        form.confirm_password.data = data.get('confirm_password')
+
+        # Additional fields
+        form.business_project.data = data.get('business_project')
+        form.value_chain_cat.data = data.get('value_chain_cat')
+        form.borrowing_relationship.data = data.get('borrowing_relationship')
+        form.fresh_loan_request.data = data.get('fresh_loan_request')
+        form.request_submitted_to_bank.data = data.get('request_submitted_to_bank')
+        form.feasibility_study_available.data = data.get('feasibility_study_available')
+        form.proposed_facility_amount.data = data.get('proposed_facility_amount')
+        form.purpose_of_facility.data = data.get('purpose_of_facility')
+        form.name_of_bank.data = data.get('name_of_bank')
+        form.security_proposed.data = data.get('security_proposed')
+        form.highlights_of_discussion.data = data.get('highlights_of_discussion')
+        form.rm_bm_name_phone_number.data = data.get('rm_bm_name_phone_number')
+        form.rm_bm_email.data = data.get('rm_bm_email')
+        form.status_update.data = data.get('status_update')
+        form.challenges.data = data.get('challenges')
+        form.proposed_next_steps.data = data.get('proposed_next_steps')
+        
+        if form.validate():
+            try:
+                # Extract form data
+                business_name = form.business_name.data
+                business_address = form.business_address.data
+                phone_number = form.phone_number.data
+                email = form.email.data
+                state = form.state.data
+                password = form.password.data
+                hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+
+                # Additional fields
+                business_project = form.business_project.data
+                value_chain_cat = form.value_chain_cat.data
+                borrowing_relationship = form.borrowing_relationship.data
+                fresh_loan_request = form.fresh_loan_request.data
+                request_submitted_to_bank = form.request_submitted_to_bank.data
+                feasibility_study_available = form.feasibility_study_available.data
+                proposed_facility_amount = form.proposed_facility_amount.data
+                purpose_of_facility = form.purpose_of_facility.data
+                name_of_bank = form.name_of_bank.data
+                security_proposed = form.security_proposed.data
+                highlights_of_discussion = form.highlights_of_discussion.data
+                rm_bm_name_phone_number = form.rm_bm_name_phone_number.data
+                rm_bm_email = form.rm_bm_email.data
+                status_update = form.status_update.data
+                challenges = form.challenges.data
+                proposed_next_steps = form.proposed_next_steps.data
+
+                # Check for existing user
+                if User.query.filter_by(email=email).first():
+                    return jsonify({"error": "Email already registered!"}), 400
+                if User.query.filter_by(business_name=business_name).first():
+                    return jsonify({"error": "Business Name already registered!"}), 400
+
+                # Create and save new user
+                new_user = User(
+                    business_name=business_name,
+                    business_address=business_address,
+                    phone_number=phone_number,
+                    email=email,
+                    state=state,
+                    password=hashed_password,
+                    business_project=business_project,
+                    value_chain_cat=value_chain_cat,
+                    borrowing_relationship=borrowing_relationship,
+                    fresh_loan_request=fresh_loan_request,
+                    request_submitted_to_bank=request_submitted_to_bank,
+                    feasibility_study_available=feasibility_study_available,
+                    proposed_facility_amount=proposed_facility_amount,
+                    purpose_of_facility=purpose_of_facility,
+                    name_of_bank=name_of_bank,
+                    security_proposed=security_proposed,
+                    highlights_of_discussion=highlights_of_discussion,
+                    rm_bm_name_phone_number=rm_bm_name_phone_number,
+                    rm_bm_email=rm_bm_email,
+                    status_update=status_update,
+                    challenges=challenges,
+                    proposed_next_steps=proposed_next_steps
+                )
+                db.session.add(new_user)
+                db.session.commit()
+                return jsonify({"message": "Registration successful!"}), 201
+
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+        else:
+            return jsonify({"errors": form.errors}), 400
+    else:
+        return jsonify({"error": "Invalid JSON data"}), 400
+    
    
-    # Add additional fields
-    business_project = data.get('business_project')
-    value_chain_cat = data.get('value_chain_cat')
-    borrowing_relationship = data.get('borrowing_relationship')
-    fresh_loan_request = data.get('fresh_loan_request')
-    request_submitted_to_bank = data.get('request_submitted_to_bank')
-    feasibility_study_available = data.get('feasibility_study_available')
-    proposed_facility_amount = data.get('proposed_facility_amount')
-    purpose_of_facility = data.get('PURPOSE_OF_FACILITY')
-    name_of_bank = data.get('NAME_OF_BANK')
-    security_proposed = data.get('SECURITY_PROPOSED')
-    highlights_of_discussion = data.get('HIGHLIGHTS_OF_DISCUSSION')
-    rm_bm_name_phone_number = data.get('RM_BM_NAME_PHONE_NUMBER')
-    rm_bm_email = data.get('RM_BM_EMAIL')
-    status_update = data.get('STATUS_UPDATE')
-    challenges = data.get('CHALLENGES')
-    proposed_next_steps = data.get('PROPOSED_NEXT_STEPS')
-
-    # Check if user email already exists
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"error": "Email already registered!"}), 400
-
-    # Check if business name already exists
-    existing_user = User.query.filter_by(business_name=business_name).first()
-    if existing_user:
-        return jsonify({"error": "Business Name already registered!"}), 400
-
-    # If no duplicates found, proceed
-    new_user = User(
-        business_name=business_name,
-        business_address=business_address,
-        phone_number=phone_number,
-        email=email,
-        state=state,
-        password=hashed_password,
-        business_project=business_project,
-        value_chain_cat=value_chain_cat,
-        borrowing_relationship=borrowing_relationship,
-        fresh_loan_request=fresh_loan_request,
-        request_submitted_to_bank=request_submitted_to_bank,
-        feasibility_study_available=feasibility_study_available,
-        proposed_facility_amount=proposed_facility_amount,
-        PURPOSE_OF_FACILITY=purpose_of_facility,
-        NAME_OF_BANK=name_of_bank,
-        SECURITY_PROPOSED=security_proposed,
-        HIGHLIGHTS_OF_DISCUSSION=highlights_of_discussion,
-        RM_BM_NAME_PHONE_NUMBER=rm_bm_name_phone_number,
-        RM_BM_EMAIL=rm_bm_email,
-        STATUS_UPDATE=status_update,
-        CHALLENGES=challenges,
-        PROPOSED_NEXT_STEPS=proposed_next_steps
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message": "Registration successful!"}), 201
-
-
-
-#login using ApI
+# Login using API
 @app.route('/api/login', methods=['POST'])
 @csrf.exempt
 def api_login():
-    data = request.get_json(force=True)
-    email = data.get('email')
-    password = data.get('password')
-    user = User.query.filter_by(email=email).first()
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+        
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Missing email or password"}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['email'] = user.email
+            return jsonify({'message': 'Login successful!'}), 200
+        else:
+            return jsonify({'message': 'Invalid username or password'}), 401
 
-    if user and check_password_hash(user.password, password):
-        session['user_id'] = user.id
-        session['email'] = user.email
-        return jsonify({'message': 'Login successful!'}), 200
-    else:
-        return jsonify({'message': 'Invalid username or password'}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 #api for dashboard 
 @app.route('/api/dashboard', methods=['POST'])
 @csrf.exempt
+@jwt_required()
 def api_dashboard():
-    if 'user_id' in session:
-        user = User.query.get(session['user_id'])
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if user:
         return jsonify({'email': user.email, 'user_id': user.id}), 200
     else:
-        return jsonify({'message': 'You need to log in first.'}), 403
+        return jsonify({'message': 'User not found.'}), 404
 
 
 #api for  predict 
-@app.route("/api/predict", methods=['POST'])
+ 
+
+@app.route('/api/predict', methods=['POST'])
 @csrf.exempt
 def api_predict():
     try:
-        # Get JSON data from request
-        data = request.get_json(force=True)
+        # Convert JSON data to a MultiDict
+        form_data = MultiDict(request.json)
+        form = PredictionForm(form_data, csrf_enabled=False)  # Disable CSRF for the form
+        
+        # Validate form data
+        if form.validate():
+            # Extract form data
+            business_project = form.BUSINESS_PROJECT.data
+            value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
+            borrowing_relationship = form.BORROWING_RELATIONSHIP.data
+            fresh_loan_request = form.FRESH_LOAN_REQUEST.data
+            request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
+            feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
+            proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
 
-        # Check if all required fields are present
-        if not all(key in data for key in ['BUSINESS_PROJECT', 'VALUE_CHAIN_CATEGORY', 'BORROWING_RELATIONSHIP', 'FRESH_LOAN_REQUEST', 'REQUEST_SUBMITTED_TO_BANK', 'FEASIBILITY_STUDY_AVAILABLE', 'PROPOSED_FACILITY_AMOUNT']):
-            return jsonify({'error': 'Missing required fields'}), 400
+            # Create dataframe for model prediction
+            df = pd.DataFrame({
+                'BUSINESS_PROJECT': [business_project],
+                'VALUE_CHAIN_CATEGORY': [value_chain_cat],
+                'BORROWING_RELATIONSHIP': [borrowing_relationship],
+                'FRESH_LOAN_REQUEST': [fresh_loan_request],
+                'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
+                'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
+                'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+            })
 
-        # Validate input data
-        business_project = data.get('BUSINESS_PROJECT')
-        value_chain_cat = data.get('VALUE_CHAIN_CATEGORY')
-        borrowing_relationship = data.get('BORROWING_RELATIONSHIP')
-        fresh_loan_request = data.get('FRESH_LOAN_REQUEST')
-        request_submitted_to_bank = data.get('REQUEST_SUBMITTED_TO_BANK')
-        feasibility_study_available = data.get('FEASIBILITY_STUDY_AVAILABLE')
-        proposed_facility_amount = float(data.get('PROPOSED_FACILITY_AMOUNT'))
+            # Encode the categorical values as needed
+            encoder_dicts = {
+                'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
+                'VALUE_CHAIN_CATEGORY': {
+                    'MIDSTREAM': 0,
+                    'PRE-UPSTREAM': 1,
+                    'UPSTREAM': 2,
+                    'DOWNSTREAM': 3,
+                    'UPSTREAM AND MIDSTREAM': 4,
+                    'MIDSTREAM AND DOWNSTREAM': 5,
+                    'UPSTREAM AND DOWNSTREAM': 6
+                },
+                'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
+                'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
+                'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
+                'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
+            }
 
-        # Create dataframe
-        df = pd.DataFrame({'BUSINESS_PROJECT': [business_project], 'VALUE_CHAIN_CATEGORY': [value_chain_cat], 'BORROWING_RELATIONSHIP': [borrowing_relationship], 'FRESH_LOAN_REQUEST': [fresh_loan_request], 'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank], 'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available], 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]})
+            for col, values in encoder_dicts.items():
+                df[col].replace(values, inplace=True)
 
-        # Encode data
-        encoder_dicts = {'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1}, 'VALUE_CHAIN_CATEGORY': {'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3, 'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, 'UPSTREAM AND DOWNSTREAM': 6}, 'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1}, 'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1}, 'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1}, 'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}}
-        for col, values in encoder_dicts.items():
-            df[col].replace(values, inplace=True)
+            # Load the model and make a prediction
+            loaded_model = joblib.load('../notebook/xgboost.joblib')
+            prediction = loaded_model.predict(df)
 
-        # Load model and make prediction
-        loaded_model = joblib.load('../notebook/xgboost.joblib')
-        prediction = loaded_model.predict(df)
-
-        # Return prediction result
-        if prediction[0] == 1:
-            return jsonify({'granted': 'Your loan request has been granted'})
+            return jsonify({'prediction': int(prediction[0])}), 200
         else:
-            return jsonify({'denied': 'Your loan request is denied'})
+            return jsonify({'errors': form.errors}), 400
 
     except Exception as e:
-        # Log error and return error response
-        logging.error(f'Error processing request: {e}')
-        return jsonify({'error': 'Error processing request'}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 
 #users route 

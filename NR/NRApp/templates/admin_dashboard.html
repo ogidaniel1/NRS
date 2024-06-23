@@ -53,13 +53,13 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('search') }}" method="post">
-                                {{ form.hidden_tag() }}
+                                {{ search_form.hidden_tag() }}
                                 <div class="form-group">
                                     <label for="search_term">Search by ID or Email</label>
-                                    <input type="text" id="search_term" name="search_term" class="form-control" placeholder="Enter User ID or Email" required>
+                                    {{ search_form.search_term(class="form-control", id="search_term", placeholder="Enter User ID or Email") }}
                                 </div>
                                 <div class="text-center">
-                                    <button type="submit" class="btn btn-success btn-lg">Search</button>
+                                    {{ search_form.submit(class="btn btn-success btn-lg") }}
                                 </div>
                             </form>
                         </div>
@@ -71,8 +71,39 @@
                             <h2>Predict</h2>
                         </div>
                         <div class="card-body">
-                            <p>Welcome to the prediction page!</p>
-                            <a href="{{ url_for('prediction') }}">Click here to go to the prediction page</a>
+                            <form action="{{ url_for('predict') }}" method="post">
+                                {{ form.hidden_tag() }}
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Proposed Facility Amount</th>
+                                                <th>Business Project</th>
+                                                <th>Value Chain Category</th>
+                                                <th>Borrowing Relationship</th>
+                                                <th>Fresh Loan Request</th>
+                                                <th>Request Submitted to Bank</th>
+                                                <th>Feasibility Study Available</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{{ form.PROPOSED_FACILITY_AMOUNT(class="form-control") }}</td>
+                                                <td>{{ form.BUSINESS_PROJECT(class="form-control") }}</td>
+                                                <td>{{ form.VALUE_CHAIN_CATEGORY(class="form-control") }}</td>
+                                                <td>{{ form.BORROWING_RELATIONSHIP(class="form-control") }}</td>
+                                                <td>{{ form.FRESH_LOAN_REQUEST(class="form-control") }}</td>
+                                                <td>{{ form.REQUEST_SUBMITTED_TO_BANK(class="form-control") }}</td>
+                                                <td>{{ form.FEASIBILITY_STUDY_AVAILABLE(class="form-control") }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-success">Predict</button>
+                                    <button type="reset" class="btn btn-secondary">Reset</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
