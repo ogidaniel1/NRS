@@ -1,3 +1,4 @@
+import os
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from wtforms.validators import DataRequired, Email, EqualTo,Length,ValidationError,Optional,Regexp
@@ -8,7 +9,7 @@ from wtforms.validators import DataRequired
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify, abort,session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager
+from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin,login_manager,current_user
 from Crypto.Hash import SHA256
 from flask_migrate import Migrate
 from werkzeug.datastructures import MultiDict
@@ -474,7 +475,6 @@ def login():
 # #dashboard and function ..............
 @app.route('/dashboard')
 @login_required
-
 def dashboard():
 
     form = DeleteUserForm()
@@ -587,10 +587,13 @@ def search():
 #predict route....
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
+@csrf.exempt
 def predict():
-    form = PredictionForm()  # Create an instance of the PredictionForm class
+
+    form = PredictionForm(csrf_enabled=False)   # Create an instance of the PredictionForm class
     
     if form.validate_on_submit():
+
         # Fetch the form data
         business_project = form.BUSINESS_PROJECT.data
         value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
@@ -683,7 +686,6 @@ def predict():
             form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
             form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
 
-
     return render_template("prediction.html", form=form)
 
 #API register route 
@@ -731,7 +733,7 @@ def api_register():
                 email = form.email.data
                 state = form.state.data
                 password = form.password.data
-                hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+                confirm_password = generate_password_hash(password, method='pbkdf2:sha256')
 
                 # Additional fields
                 business_project = form.business_project.data
@@ -764,7 +766,7 @@ def api_register():
                     phone_number=phone_number,
                     email=email,
                     state=state,
-                    password=hashed_password,
+                    password=confirm_password,
                     business_project=business_project,
                     value_chain_cat=value_chain_cat,
                     borrowing_relationship=borrowing_relationship,
@@ -799,55 +801,76 @@ def api_register():
 @csrf.exempt
 def api_login():
     try:
+        # Get JSON data from request
         data = request.json
-        if not data:
-            return jsonify({"error": "No JSON data received"}), 400
-        
-        email = data.get('email')
-        password = data.get('password')
-        
-        if not email or not password:
-            return jsonify({"error": "Missing email or password"}), 400
-        
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
-            session['user_id'] = user.id
-            session['email'] = user.email
-            return jsonify({'message': 'Login successful!'}), 200
+
+        # Convert JSON data to a MultiDict
+        form_data = MultiDict(data)
+        form = LoginForm(form_data, csrf_enabled=False)  # Disable CSRF for the form
+
+        # Validate form data
+        if form.validate():
+            # Clear any existing session data
+            session.clear()
+            email = form.email.data
+            password = form.password.data
+
+            # Check for user login
+            user = User.query.filter_by(email=email).first()
+            if user and check_password_hash(user.password, password):
+                session['user_id'] = user.id
+                session['email'] = user.email
+                session['is_admin'] = False
+                return jsonify({
+                    'message': 'Login successful!',
+                    'user_id': user.id,
+                    'email': user.email,
+                    'is_admin': False
+                }), 200
+
+            # Check for admin login
+            admin = Admin.query.filter_by(email=email).first()
+            if admin and check_password_hash(admin.password, password):
+                session['user_id'] = admin.id
+                session['email'] = admin.email
+                session['is_admin'] = True
+                return jsonify({
+                    'message': 'Login successful!',
+                    'user_id': admin.id,
+                    'email': admin.email,
+                    'is_admin': True
+                }), 200
+
+            # If login fails
+            return jsonify({'error': 'Login failed. Check your credentials and try again.'}), 401
+
         else:
-            return jsonify({'message': 'Invalid username or password'}), 401
+            # Return form validation errors
+            return jsonify({'errors': form.errors}), 400
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-#api for dashboard 
-@app.route('/api/dashboard', methods=['POST'])
-@csrf.exempt
-@jwt_required()
-def api_dashboard():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
-    if user:
-        return jsonify({'email': user.email, 'user_id': user.id}), 200
-    else:
-        return jsonify({'message': 'User not found.'}), 404
-
 
 #api for  predict 
- 
-
+# Ensure to set this to the correct path on your server
+# Define the absolute path to the model
+MODEL_PATH = os.path.join(os.path.dirname(__file__), '../notebook/xgboost.joblib')
 @app.route('/api/predict', methods=['POST'])
 @csrf.exempt
 def api_predict():
     try:
+        # Get JSON data from request
+        data = request.json
+
         # Convert JSON data to a MultiDict
-        form_data = MultiDict(request.json)
+        form_data = MultiDict(data)
         form = PredictionForm(form_data, csrf_enabled=False)  # Disable CSRF for the form
-        
+
         # Validate form data
-        if form.validate():
-            # Extract form data
+        if form.validate_on_submit():
+            # Fetch the form data
             business_project = form.BUSINESS_PROJECT.data
             value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
             borrowing_relationship = form.BORROWING_RELATIONSHIP.data
@@ -856,7 +879,7 @@ def api_predict():
             feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
             proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
 
-            # Create dataframe for model prediction
+            # Dataframe for model
             df = pd.DataFrame({
                 'BUSINESS_PROJECT': [business_project],
                 'VALUE_CHAIN_CATEGORY': [value_chain_cat],
@@ -867,7 +890,6 @@ def api_predict():
                 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
             })
 
-            # Encode the categorical values as needed
             encoder_dicts = {
                 'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
                 'VALUE_CHAIN_CATEGORY': {
@@ -888,16 +910,29 @@ def api_predict():
             for col, values in encoder_dicts.items():
                 df[col].replace(values, inplace=True)
 
-            # Load the model and make a prediction
-            loaded_model = joblib.load('../notebook/xgboost.joblib')
+            # Ensure the correct path for the model
+            MODEL_PATH = '/home/hoghidan1/NRS/NR/notebook/xgboost.joblib'
+            loaded_model = joblib.load(MODEL_PATH)
             prediction = loaded_model.predict(df)
 
-            return jsonify({'prediction': int(prediction[0])}), 200
+            # Assuming that session['user_id'] is not necessary for an API, removing session dependency.
+            # You might need to replace it with another form of user identification if needed.
+            # For instance, JWT token verification can be used to get user information.
+
+            if prediction[0] == 1:
+                return jsonify({
+                    'message': "Your loan request is successful.",
+                    'prediction_id': generate_unique_code()  # Generate a unique ID for prediction
+                }), 200
+            else:
+                return jsonify({'message': "Your loan request is denied."}), 200
+
         else:
             return jsonify({'errors': form.errors}), 400
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
