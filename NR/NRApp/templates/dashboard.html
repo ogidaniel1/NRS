@@ -16,8 +16,8 @@
                             <span data-feather="file"></span>
                             Admin Dashboard
                         </a>
+                        {% endif %}
                     </li>
-                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="#predict" data-toggle="tab">
                             <span data-feather="file"></span>
@@ -27,8 +27,7 @@
                 </ul>
             </div>
         </nav>
-        <br>
-        <p></p>
+        
         <!-- Main content -->
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
             <!-- Flash messages -->
@@ -74,7 +73,9 @@
                         </div>
                         <div class="card-body">
                             <p>Welcome to the prediction page!</p>
-                            <a href="{{ url_for('prediction') }}">Click here to go to the prediction page</a>
+                            <div class="text-center">
+                                <a href="{{ url_for('prediction') }}" class="btn btn-success btn-lg">Click to Predict</a>
+                            </div>
                             <!-- Prediction form or content goes here -->
                         </div>
                     </div>
@@ -83,4 +84,5 @@
         </main>
     </div>
 </div>
+
 {% endblock %}
