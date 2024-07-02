@@ -940,10 +940,6 @@ def show_admins():
     return render_template('admins.html', admins=admins)
    
 if __name__ == '__main__':
-    with app.app_context():
-        try:
-            db.create_all()
-            print("Database initialized successfully.")
-        except Exception as e:
-            print(f"Error initializing database: {e}")
     app.run(host='0.0.0.0', debug=True)
+
+
