@@ -180,19 +180,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-#approval session..........
-@app.route('/approve/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def approve(user_id):
-    user = User.query.get_or_404(user_id)
-    if request.method == 'POST':
-        user.prediction_id = generate_unique_code()
-        db.session.commit()
-        flash(f'User {user.email} has been approved with Prediction ID {user.prediction_id}.', 'success')
-        return redirect(url_for('dashboard'))
-    csrf_token = generate_csrf()
-    return render_template('approval.html', user=user, csrf_token=csrf_token)
-     
+   
 
 #The User class defines the database model.
 
@@ -299,7 +287,7 @@ def edit_user(user_id):
         user.fresh_loan_request = request.form.get('fresh_loan_request') or None
         user.request_submitted_to_bank = request.form.get('request_submitted_to_bank') or None
         user.feasibility_study_available = request.form.get('feasibility_study_available') or None
-        user.proposed_facility_amount = request.form.get('proposed_facility_amount') or 0
+        user.proposed_facility_amount = request.form.get('proposed_facility_amount') or 0.00
         if user.proposed_facility_amount:
             try:
                 user.proposed_facility_amount = float(user.proposed_facility_amount)
