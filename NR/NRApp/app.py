@@ -17,6 +17,7 @@ from alembic import op
 from flask_wtf.csrf import CSRFError
 import sqlalchemy as sa
 from functools import wraps
+import pandas as pd
 import pymysql, logging
 
 
@@ -235,6 +236,8 @@ class Admin(db.Model):
 
 
 class PredictionForm(FlaskForm):
+    class Meta:
+        csrf = False
     BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
     VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
     BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
@@ -572,7 +575,7 @@ def search():
 
 
 
-#predict route....
+# #predict route....
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
 @csrf.exempt
@@ -654,14 +657,14 @@ def predict():
 
                 db.session.commit()
                 flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
-                return render_template("approval.html", user=user, prediction_id=prediction_id, form=form)
+                return render_template("approval.html", user=user, prediction_id=prediction_id)
             else:
                 flash("User not found. Please log in again.")
                 return redirect(url_for('login'))
         else:
             flash("Your loan request is denied.")
             user = User.query.get(session['user_id'])
-            return render_template("disapproval.html", user=user, form=form)
+            return render_template("disapproval.html", user=user)
         
     elif request.method == 'GET':
         if 'form_data' in session:
@@ -676,6 +679,9 @@ def predict():
 
     return render_template("prediction.html", form=form)
 
+
+
+ 
 #API register route 
 @app.route('/api/register', methods=['POST'])
 @csrf.exempt
