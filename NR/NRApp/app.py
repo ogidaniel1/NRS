@@ -36,7 +36,8 @@ from datetime import timedelta
 
 
 app = Flask(__name__)
-
+#incase of deployment to live server
+application = app
 
 #sqlite3 flask default db
 app.config['SECRET_KEY'] = 'your_secret_key_here'
