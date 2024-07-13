@@ -2,7 +2,7 @@ import os
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from wtforms.validators import DataRequired, Email, EqualTo,Length,ValidationError,Optional,Regexp
-from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import generate_csrf, validate_csrf
 from wtforms import SubmitField
 from wtforms import StringField, SubmitField, FloatField,PasswordField,SelectField
 from wtforms.validators import DataRequired
@@ -36,7 +36,8 @@ from datetime import timedelta
 
 
 app = Flask(__name__)
-
+#incase of deployment to live server
+application = app
 
 #sqlite3 flask default db
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -53,9 +54,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 #     "pool_recycle": 250
 # }
 
+
 db = SQLAlchemy(app)
-csrf = CSRFProtect(app)
-csrf.init_app(app)
+# csrf = CSRFProtect(app)
+# csrf.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -236,8 +238,8 @@ class Admin(db.Model):
 
 
 class PredictionForm(FlaskForm):
-    class Meta:
-        csrf = False
+    # class Meta:
+    #     csrf = False
     BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
     VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
     BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
@@ -347,7 +349,7 @@ def home():
 #The /register route handles user registration, hashing the password before storing it.
 
 @app.route('/register', methods=['GET', 'POST'])
-@csrf.exempt
+
 def register():
     form = RegistrationForm(csrf_enabled=False)  # Disable CSRF for this form
 
@@ -430,7 +432,6 @@ def load_user(user_id):
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@csrf.exempt
 def login():
 
     form = LoginForm()
@@ -539,14 +540,15 @@ def register_admin():
     return render_template('register_admin.html', form=form)
 
 # #prediction route from login dashboard and function ..............
+
 @app.route('/prediction')
 @login_required
+
 def prediction():
     user = User.query.get(session['user_id'])
-    # csrf_token = generate_csrf()
     form = PredictionForm()
-    return render_template('prediction.html', user=user, form=form)
-    # return render_template('prediction.html')
+    return render_template('prediction.html', user=user, form = form)
+
 
 
 # Logout route
@@ -578,13 +580,13 @@ def search():
 # #predict route....
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
-@csrf.exempt
+
 def predict():
 
-    form = PredictionForm(csrf_enabled=False)   # Create an instance of the PredictionForm class
+    form = PredictionForm()   # Create an instance of the PredictionForm class
     
     if form.validate_on_submit():
-
+             
         # Fetch the form data
         business_project = form.BUSINESS_PROJECT.data
         value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
@@ -593,6 +595,7 @@ def predict():
         request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
         feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
         proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
+     
 
         # Save form data to session
         session['form_data'] = {
@@ -604,7 +607,7 @@ def predict():
             'feasibility_study_available': feasibility_study_available,
             'proposed_facility_amount': proposed_facility_amount
         }
-
+        
         # Dataframe for model
         df = pd.DataFrame({
             'BUSINESS_PROJECT': [business_project],
@@ -676,15 +679,14 @@ def predict():
             form.REQUEST_SUBMITTED_TO_BANK.data = form_data['request_submitted_to_bank']
             form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
             form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
-
+    
     return render_template("prediction.html", form=form)
-
 
 
  
 #API register route 
 @app.route('/api/register', methods=['POST'])
-@csrf.exempt
+
 def api_register():
     data = request.get_json()  # Parse JSON data from request
     
@@ -792,7 +794,7 @@ def api_register():
    
 # Login using API
 @app.route('/api/login', methods=['POST'])
-@csrf.exempt
+ 
 def api_login():
     try:
         # Get JSON data from request
@@ -852,7 +854,7 @@ def api_login():
 # Define the absolute path to the model
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '../notebook/xgboost.joblib')
 @app.route('/api/predict', methods=['POST'])
-@csrf.exempt
+
 def api_predict():
     try:
         # Get JSON data from request
@@ -905,7 +907,7 @@ def api_predict():
                 df[col].replace(values, inplace=True)
 
             # Ensure the correct path for the model
-            MODEL_PATH = '/home/hoghidan1/NRS/NR/notebook/xgboost.joblib'
+            MODEL_PATH = '../notebook/xgboost.joblib'
             loaded_model = joblib.load(MODEL_PATH)
             prediction = loaded_model.predict(df)
 
