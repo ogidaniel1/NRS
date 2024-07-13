@@ -3,4 +3,3 @@ flask_jwt_extended
 python
 flask
 gunicorn
-email_validator
