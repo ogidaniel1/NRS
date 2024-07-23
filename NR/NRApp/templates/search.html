@@ -28,7 +28,7 @@
         {% endwith %}
         <!-- Search Form -->
         <form method="POST" action="{{ url_for('search') }}">
-            {{ form.hidden_tag() }}
+            {{ search_form.hidden_tag() }}
             <div class="form-group">
                 <label for="search_term">Search by ID or Email</label>
                 <input type="text" class="form-control" id="search_term" name="search_term" required>
@@ -62,7 +62,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>{{ (link unavailable) }}</td>
+                        <td>{{ (user.id) }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.business_name }}</td>
                         <td>{{ user.phone_number }}</td>

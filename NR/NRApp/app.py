@@ -2,7 +2,7 @@ import os
 from flask_wtf import CSRFProtect, FlaskForm
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from wtforms.validators import DataRequired, Email, EqualTo,Length,ValidationError,Optional,Regexp
-from flask_wtf.csrf import generate_csrf, validate_csrf
+from flask_wtf.csrf import generate_csrf, validate_csrf,CSRFError
 from wtforms import SubmitField
 from wtforms import StringField, SubmitField, FloatField,PasswordField,SelectField
 from wtforms.validators import DataRequired
@@ -14,7 +14,6 @@ from Crypto.Hash import SHA256
 from flask_migrate import Migrate
 from werkzeug.datastructures import MultiDict
 from alembic import op
-from flask_wtf.csrf import CSRFError
 import sqlalchemy as sa
 from functools import wraps
 import pandas as pd
@@ -90,7 +89,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     class Meta:
-        csrf = False
+        csrf = True
     business_name = StringField('Business Name', validators=[DataRequired(), Length(min=10, max=100)])
     business_address = StringField('Business Address', validators=[DataRequired(), Length(min=10, max=100)])
     phone_number = StringField('Phone Number', validators=[DataRequired(), Length(max=15), Regexp(regex='^\d+$', message="Phone number must contain only digits")])
@@ -133,6 +132,7 @@ def validate_email(self, field):
             raise ValidationError('Email must have the domain "@nrs.com".')
 
 class RegisterAdminForm(FlaskForm):
+
     admin_name = StringField('Name', validators=[DataRequired(), Length(min=2, max=50)])
     admin_address = StringField('Address', validators=[DataRequired(), Length(min=2, max=100)])
     phone_number = StringField('Phone Number', validators=[DataRequired(), Length(max=15), Regexp(regex='^\d+$', message="Phone number must contain only digits")])
@@ -140,6 +140,19 @@ class RegisterAdminForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Register')
+
+
+class PredictionForm(FlaskForm):
+    # class Meta:
+    #     csrf = False
+    BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
+    VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
+    BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    FRESH_LOAN_REQUEST = SelectField('Fresh Loan Request', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    REQUEST_SUBMITTED_TO_BANK = SelectField('Request Submitted to Bank', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
+    FEASIBILITY_STUDY_AVAILABLE = SelectField('Feasibility Study Available', choices=[('NO', 'No'), ('YES', 'Yes'), ('NIL', 'Not Available')], validators=[DataRequired()])
+    PROPOSED_FACILITY_AMOUNT = FloatField('Proposed Facility Amount', validators=[DataRequired()])
+    submit = SubmitField('Predict')
 
 
 #logged out session................
@@ -237,19 +250,6 @@ class Admin(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
 
-class PredictionForm(FlaskForm):
-    # class Meta:
-    #     csrf = False
-    BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
-    VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
-    BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
-    FRESH_LOAN_REQUEST = SelectField('Fresh Loan Request', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
-    REQUEST_SUBMITTED_TO_BANK = SelectField('Request Submitted to Bank', choices=[('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
-    FEASIBILITY_STUDY_AVAILABLE = SelectField('Feasibility Study Available', choices=[('NO', 'No'), ('YES', 'Yes'), ('NIL', 'Not Available')], validators=[DataRequired()])
-    PROPOSED_FACILITY_AMOUNT = FloatField('Proposed Facility Amount', validators=[DataRequired()])
-    submit = SubmitField('Predict')
-
-
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
@@ -313,7 +313,7 @@ def edit_user(user_id):
 # Base form with CSRF protection enabled
 class MyBaseForm(FlaskForm):
     class Meta:
-        csrf = True
+        csrf = False
 
 # Form for deleting a user
 class DeleteUserForm(MyBaseForm):
@@ -336,7 +336,6 @@ def delete_user(user_id):
         return redirect(url_for('admin_dashboard'))
     
     return render_template('confirm.html', user=user, form=form)
-
 
 # #homepage route...........
 @app.route("/", methods=['GET', 'POST'])
@@ -541,7 +540,7 @@ def register_admin():
 
 # #prediction route from login dashboard and function ..............
 
-@app.route('/prediction')
+@app.route('/prediction' , methods=['GET', 'POST'])
 @login_required
 
 def prediction():
@@ -580,95 +579,112 @@ def search():
 # #predict route....
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
-
 def predict():
 
     form = PredictionForm()   # Create an instance of the PredictionForm class
-    
+    user = User.query.get(session['user_id'])
     if form.validate_on_submit():
-             
-        # Fetch the form data
-        business_project = form.BUSINESS_PROJECT.data
-        value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
-        borrowing_relationship = form.BORROWING_RELATIONSHIP.data
-        fresh_loan_request = form.FRESH_LOAN_REQUEST.data
-        request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
-        feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
-        proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
-     
-
-        # Save form data to session
-        session['form_data'] = {
-            'business_project': business_project,
-            'value_chain_cat': value_chain_cat,
-            'borrowing_relationship': borrowing_relationship,
-            'fresh_loan_request': fresh_loan_request,
-            'request_submitted_to_bank': request_submitted_to_bank,
-            'feasibility_study_available': feasibility_study_available,
-            'proposed_facility_amount': proposed_facility_amount
-        }
+        try:
+            # Fetch the form data
+            business_project = form.BUSINESS_PROJECT.data
+            value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
+            borrowing_relationship = form.BORROWING_RELATIONSHIP.data
+            fresh_loan_request = form.FRESH_LOAN_REQUEST.data
+            request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
+            feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
+            proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
         
-        # Dataframe for model
-        df = pd.DataFrame({
-            'BUSINESS_PROJECT': [business_project],
-            'VALUE_CHAIN_CATEGORY': [value_chain_cat],
-            'BORROWING_RELATIONSHIP': [borrowing_relationship],
-            'FRESH_LOAN_REQUEST': [fresh_loan_request],
-            'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
-            'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
-            'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
-        })
-        encoder_dicts = {
-            'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
-            'VALUE_CHAIN_CATEGORY': {
-                'MIDSTREAM': 0,
-                'PRE-UPSTREAM': 1,
-                'UPSTREAM': 2,
-                'DOWNSTREAM': 3,
-                'UPSTREAM AND MIDSTREAM': 4,
-                'MIDSTREAM AND DOWNSTREAM': 5,
-                'UPSTREAM AND DOWNSTREAM': 6
-            },
-            'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
-            'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
-            'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
-            'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
-        }
+    # if request.method == 'POST':
+    #     # Manually validate the CSRF token
+    #     csrf_token = request.form.get('csrf_token')
+    #     if not validate_csrf(csrf_token):
+    #         flash("CSRF token did not match. Please try again.")
+    #         return redirect(url_for('predict'))
 
-        for col, values in encoder_dicts.items():
-            df[col].replace(values, inplace=True)
+            # Fetch the form data
+            # business_project = request.form.get('BUSINESS_PROJECT')
+            # value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
+            # borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
+            # fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
+            # request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
+            # feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
+            # proposed_facility_amount = request.form.get('PROPOSED_FACILITY_AMOUNT')
 
-        loaded_model = joblib.load('../notebook/xgboost.joblib')
-        prediction = loaded_model.predict(df)
+            # Save form data to session
+            session['form_data'] = {
+                'business_project': business_project,
+                'value_chain_cat': value_chain_cat,
+                'borrowing_relationship': borrowing_relationship,
+                'fresh_loan_request': fresh_loan_request,
+                'request_submitted_to_bank': request_submitted_to_bank,
+                'feasibility_study_available': feasibility_study_available,
+                'proposed_facility_amount': proposed_facility_amount
+            }
+            
+            # Dataframe for model that prediction should be carried out on
+            df = pd.DataFrame({
+                'BUSINESS_PROJECT': [business_project],
+                'VALUE_CHAIN_CATEGORY': [value_chain_cat],
+                'BORROWING_RELATIONSHIP': [borrowing_relationship],
+                'FRESH_LOAN_REQUEST': [fresh_loan_request],
+                'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
+                'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
+                'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+            })
+            encoder_dicts = {
+                'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
+                'VALUE_CHAIN_CATEGORY': {
+                    'MIDSTREAM': 0,
+                    'PRE-UPSTREAM': 1,
+                    'UPSTREAM': 2,
+                    'DOWNSTREAM': 3,
+                    'UPSTREAM AND MIDSTREAM': 4,
+                    'MIDSTREAM AND DOWNSTREAM': 5,
+                    'UPSTREAM AND DOWNSTREAM': 6
+                },
+                'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
+                'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
+                'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
+                'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
+            }
 
-        if prediction[0] == 1:
-            user = User.query.get(session['user_id'])
-            if user:
-                prediction_id = user.prediction_id
-                if prediction_id is None:
-                    prediction_id = generate_unique_code()
-                    user.prediction_id = prediction_id
+            for col, values in encoder_dicts.items():
+                df[col].replace(values, inplace=True)
 
-                # Update existing user data
-                user.business_project = business_project
-                user.value_chain_cat = value_chain_cat
-                user.borrowing_relationship = borrowing_relationship
-                user.fresh_loan_request = fresh_loan_request
-                user.request_submitted_to_bank = request_submitted_to_bank
-                user.feasibility_study_available = feasibility_study_available
-                user.proposed_facility_amount = proposed_facility_amount
+            loaded_model = joblib.load('../notebook/xgboost.joblib')
+            prediction = loaded_model.predict(df)
 
-                db.session.commit()
-                flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
-                return render_template("approval.html", user=user, prediction_id=prediction_id)
+            if prediction[0] == 1:
+                user = User.query.get(session['user_id'])
+                if user:
+                    prediction_id = user.prediction_id
+                    if prediction_id is None:
+                        prediction_id = generate_unique_code()
+                        user.prediction_id = prediction_id
+
+                    # Update existing user data and save
+                    user.business_project = business_project
+                    user.value_chain_cat = value_chain_cat
+                    user.borrowing_relationship = borrowing_relationship
+                    user.fresh_loan_request = fresh_loan_request
+                    user.request_submitted_to_bank = request_submitted_to_bank
+                    user.feasibility_study_available = feasibility_study_available
+                    user.proposed_facility_amount = proposed_facility_amount
+
+                    db.session.commit()
+                    flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
+                    return render_template("approval.html", user=user, prediction_id=prediction_id)
+                else:
+                    flash("User not found. Please log in again.")
+                    return redirect(url_for('login'))
             else:
-                flash("User not found. Please log in again.")
-                return redirect(url_for('login'))
-        else:
-            flash("Your loan request is denied.")
-            user = User.query.get(session['user_id'])
-            return render_template("disapproval.html", user=user)
-        
+                flash("Your loan request is denied.")
+                user = User.query.get(session['user_id'])
+                return render_template("disapproval.html", user=user)
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+            return redirect(url_for('predict'))   
+    #fetching previous inputs by same user back to form
     elif request.method == 'GET':
         if 'form_data' in session:
             form_data = session['form_data']
@@ -679,8 +695,11 @@ def predict():
             form.REQUEST_SUBMITTED_TO_BANK.data = form_data['request_submitted_to_bank']
             form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
             form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
-    
-    return render_template("prediction.html", form=form)
+
+    # else:
+    #     print(form.errors)
+
+    return render_template("prediction.html", form=form, user=user)
 
 
  

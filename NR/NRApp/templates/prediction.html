@@ -7,7 +7,7 @@
             <h2>Prediction Status Page</h2>
         </div>
         <div class="card-body">
-            <form action="{{ url_for('predict') }}" method="post">
+            <form  method="POST" action="{{ url_for('predict') }}" >
                 {{ form.hidden_tag() }}
                 <div class="table-responsive">
                     <table class="table table-striped">
