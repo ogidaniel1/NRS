@@ -1,0 +1,1 @@
+from .routes import landing as landing_bp
