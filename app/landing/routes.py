@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
-from werkzeug.security import generate_password_hash
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user
 
 #local imports
-from .forms import RegistrationForm
-from app.models import User
+from .forms import RegistrationForm, LoginForm
+from app.models import User, Admin
 from app import db
 
 landing = Blueprint('landing', __name__)
@@ -11,7 +12,6 @@ landing = Blueprint('landing', __name__)
 @landing.route("/")
 def home():
     return redirect(url_for('landing.login'))
-
 
 
 @landing.route("/register", methods=['GET', 'POST'])
@@ -55,6 +55,44 @@ def register():
     page_vars = {'page_name': 'New Registration', 'form':form}
     return render_template('landing/register.html', page_vars=page_vars)
 
+
+@landing.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            next_page = request.args.get('next')
+            flash('Login successful!', 'success')
+            return redirect(next_page) if next_page \
+                else redirect(url_for('dashboard'))
+        else:
+            flash('Login failed. Check your credentials and try again.', 'danger')
+        
+    page_vars = {'page_name': 'Login', 'form':form}
+    return render_template('landing/login.html', page_vars=page_vars)
+        
+@landing.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        # Check for admin login
+        admin = Admin.query.filter_by(email=form.email.data.lower()).first()
+        if admin and check_password_hash(admin.password, form.password.data):
+            login_user(admin, remember=form.remember.data)
+            next_page = request.args.get('next')
+            flash('Login successful!', 'success')
+            return redirect(next_page) if next_page \
+                else redirect(url_for('admin_dashboard'))
+        
+        else:
+            flash('Login failed. Check your credentials and try again.', 'danger')
+    
+    page_vars = {'page_name': 'Admin Login', 'form':form}
+    return render_template('landing/login.html', page_vars=page_vars)
 
 
 

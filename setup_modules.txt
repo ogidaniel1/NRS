@@ -1,5 +1,7 @@
-pymysql
-flask_jwt_extended
-python
 flask
-gunicorn
+flask-cors
+python-dotenv
+flask-sqlalchemy
+flask-login
+flask-wtf
+email_validator

@@ -183,5 +183,5 @@ cython_debug/
 
 # MISCELLANEOOUS
 .DS_Store
-
-
+*.db
+temp/

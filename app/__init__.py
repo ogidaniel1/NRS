@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_cors import CORS
 
 #local imports
@@ -23,5 +23,12 @@ def create_app():
 
     for route_obj in routes_list:
         app.register_blueprint(route_obj)
+
+    @app.route('/db_init', methods=['GET'])
+    def db_init():
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+            return redirect(url_for('landing.home'))
 
     return app

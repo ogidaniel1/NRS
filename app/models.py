@@ -9,8 +9,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-
-
 class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -44,5 +42,17 @@ class User(UserMixin, db.Model):
     status_update = db.Column(db.Text)
     challenges = db.Column(db.Text)
     proposed_next_steps = db.Column(db.Text)
+
+
+class Admin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    admin_name = db.Column(db.String(150), nullable=False)
+    admin_address = db.Column(db.String(150), nullable=False)
+    phone_number = db.Column(db.String(15), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
+
 
 

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRS - {{page_vars['page_name']}}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .header-light-green {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+
+<body>
+    {% extends "base.html" %}
+    {% block title %}Login{% endblock %}
+    {% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header header-light-green text-center">
+                        <h2>Login</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Flash messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <div class="pt-3">
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form method="POST" action="">  
+                            {{ page_vars['form'].hidden_tag() }}
+                            <div class="row g-3 text-start">
+                              <div class="col-sm-12">
+                                {{ page_vars['form'].email.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">email</i></span>
+                                  {% if page_vars['form'].email.errors %}
+                                    {{ page_vars['form'].email(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].email.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].email(class="form-control", placeholder="you@example.com") }}
+                                  {% endif %}
+                                </div>
+                              </div>
+                    
+                              <div class="col-sm-12">
+                                {{ page_vars['form'].password.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">lock</i></span>
+                                  {% if page_vars['form'].password.errors %}
+                                    {{ page_vars['form'].password(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].password.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].password(class="form-control", placeholder="my password") }}
+                                  {% endif %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row text-center">
+                              <div class="col-sm-12 mt-2">
+                                {{ page_vars['form'].remember(class="form-check-input") }}
+                                {{ page_vars['form'].remember.label(class="form-check-label") }}
+                              </div>
+                              <div class="col-sm-12">
+                                {{ page_vars['form'].submit(class="w-50 btn btn-outline-info mt-3") }}
+                              </div>
+                              <small class="col-sm-12 text-muted mt-3">
+                                <a href="">Forgot Password?</a>
+                              </small>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <p>Don't have an account? <a href="{{ url_for('landing.register') }}">Register here</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

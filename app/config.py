@@ -11,8 +11,7 @@ class Config:
     """Base config."""
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    DB_URI = ''#get_db_url()
-    SQLALCHEMY_DATABASE_URI = DB_URI
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DB_URI')
     ROWS_PER_PAGE = 20
     CORS_HEADERS = 'Content-Type'
 

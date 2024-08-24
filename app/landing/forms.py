@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, FloatField, StringField, IntegerField, SelectField, PasswordField, Regexp
-from wtforms.validators import ValidationError, DataRequired, Length, Email, EqualTo, Optional
+from wtforms import SubmitField, FloatField, StringField, BooleanField, SelectField, PasswordField
+from wtforms.validators import ValidationError, DataRequired, Length, Email, EqualTo, Optional, Regexp
 
 #local imports
 from .form_variables import state_options
@@ -47,6 +47,12 @@ class RegistrationForm(FlaskForm):
         if biz_entity:
             raise ValidationError('Business Name already registered!')
 
+
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember = BooleanField('Remember Me')
+    submit = SubmitField('Login')
 
 
 
