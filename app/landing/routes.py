@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user
+from flask_login import login_user, logout_user
 
 #local imports
 from .forms import RegistrationForm, LoginForm
@@ -27,7 +27,7 @@ def register():
                 phone_number=form.phone_number.data,
                 email=form.email.data.lower(),
                 state=form.state.data,
-                password=generate_password_hash(form.confirm_password, method='pbkdf2:sha256'),
+                password=generate_password_hash(form.password.data, method='pbkdf2:sha256'),
                 business_project=form.business_project.data,
                 value_chain_cat=form.value_chain_cat.data,
                 borrowing_relationship=form.borrowing_relationship.data,
@@ -93,6 +93,13 @@ def admin_login():
     
     page_vars = {'page_name': 'Admin Login', 'form':form}
     return render_template('landing/login.html', page_vars=page_vars)
+
+
+@landing.route("/logout")
+def logout():
+    logout_user()
+    flash('Logged out!', 'success')
+    return redirect(url_for('landing.home'))
 
 
 

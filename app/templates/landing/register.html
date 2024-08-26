@@ -49,42 +49,126 @@
                                 </div>
                             {% endif %}
                         {% endwith %}
-                        <form method="POST" action="{{ url_for('register') }}">
-                            {{ form.hidden_tag() }}
-                            <div class="form-group">
-                                <label for="business_name">Business Name</label>
-                                {{ form.business_name(class="form-control", id="business_name") }}
+                        <form method="POST" action="">
+                            {{ page_vars['form'].hidden_tag() }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].business_name.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">business_center</i></span>
+                                  {% if page_vars['form'].business_name.errors %}
+                                    {{ page_vars['form'].business_name(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].business_name.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].business_name(class="form-control", placeholder="Ganduje and Sons Ltd.") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="business_address">Business Address</label>
-                                {{ form.business_address(class="form-control", id="business_address") }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].business_address.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">home</i></span>
+                                  {% if page_vars['form'].business_address.errors %}
+                                    {{ page_vars['form'].business_address(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].business_address.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].business_address(class="form-control", placeholder="12 Ajayi street") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="phone_number">Phone Number</label>
-                                {{ form.phone_number(class="form-control", id="phone_number") }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].phone_number.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">phone</i></span>
+                                  {% if page_vars['form'].phone_number.errors %}
+                                    {{ page_vars['form'].phone_number(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].phone_number.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].phone_number(class="form-control", placeholder="1234567890") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                {{ form.email(class="form-control", id="email") }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].state.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">location_on</i></span>
+                                  {% if page_vars['form'].state.errors %}
+                                    {{ page_vars['form'].state(class="form-control w-50 is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].state.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].state(class="form-control w-50") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="state">State of Business</label>
-                                {{ form.state(class="form-control", id="state") }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].email.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">email</i></span>
+                                  {% if page_vars['form'].email.errors %}
+                                    {{ page_vars['form'].email(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].email.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].email(class="form-control", placeholder="you@example.com") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="password">Password</label>
-                                {{ form.password(class="form-control", id="password") }}
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].password.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">lock</i></span>
+                                  {% if page_vars['form'].password.errors %}
+                                    {{ page_vars['form'].password(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].password.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].password(class="form-control", placeholder="my password") }}
+                                  {% endif %}
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="confirm_password">Confirm Password</label>
-                                {{ form.confirm_password(class="form-control", id="confirm_password") }}
-                            </div>
+                            <div class="col-sm-12">
+                                {{ page_vars['form'].confirm_password.label(class="form-label") }}
+                                <div class="input-group has-validation">
+                                  <span class="input-group-text"><i class="material-icons">lock</i></span>
+                                  {% if page_vars['form'].confirm_password.errors %}
+                                    {{ page_vars['form'].confirm_password(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in page_vars['form'].confirm_password.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                  {% else %}
+                                      {{ page_vars['form'].confirm_password(class="form-control", placeholder="my password") }}
+                                  {% endif %}
+                                </div>
+                              </div>
                             <div class="text-center">
-                                <button type="submit" class="btn btn-primary">Register</button>
+                                {{ page_vars['form'].submit(class="w-50 btn btn-outline-info mt-3") }}
                             </div>
                         </form>
                         <div class="text-center mt-3">
-                            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                            <p>Already have an account? <a href="{{ url_for('landing.login') }}">Login here</a></p>
                         </div>
                     </div>
                 </div>
