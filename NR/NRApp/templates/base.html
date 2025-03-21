@@ -49,6 +49,102 @@
                 padding-left: 10px;
                 padding-right: 10px;
             }
+
+            body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+        box-sizing: border-box;
+    }
+    header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    header img {
+        width: 100px;
+        height: auto;
+    }
+    h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-top: 10px;
+        color: #555;
+    }
+    input[type="text"], select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    input[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 15px;
+        border-radius: 5px;
+        border: none;
+        background-color: #28a745;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    input[type="submit"]:hover {
+        background-color: #218838;
+    }
+    .error {
+        color: red;
+        margin-bottom: 15px;
+    }
+    a {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    .alert {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    .alert-success {
+        color: green;
+        padding: 10px;
+        border: 1px solid green;
+        background-color: #e6ffe6;
+    }
+
+    .hidden {
+
+        display: none;
+    }
+    .alert-error {
+        color: red;
+        padding: 10px;
+        border: 1px solid red;
+        background-color: #ffe6e6;
+    }
         }
     </style>
 </head>
@@ -63,7 +159,7 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
-                {% if session['user_id'] %}
+                {% if  current_user.authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
                     </li>
@@ -72,27 +168,27 @@
                     </li>
                 {% endif %}
             </ul>
-            {% if session['user_id'] %}
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <span class="navbar-text">
-                            Logged in as {{ session['email'] }}{% if session['is_admin'] %} (Admin){% endif %}
+                          <span class="navbar-text">
+                            Welcome:
+                            {{ session['email']  }} 
                         </span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" href="{{ url_for('logout') }}" style="color: black;">Logout</a>
                     </li>
                 </ul>
-            {% else %}
+            
                 <ul class="navbar-nav">
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}" style="color: black;">Login</a>
-                    </li>
+                    </li> -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('register') }}" style="color: black;">Register</a>
                     </li>
                 </ul>
-            {% endif %}
+            
         </div>
     </nav>
     <div class="container mt-5">

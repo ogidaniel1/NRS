@@ -69,6 +69,8 @@ def generate_unique_code():
 
 class DeleteUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
+
+
     submit = SubmitField('Delete User')
 
 
@@ -145,6 +147,8 @@ class RegisterAdminForm(FlaskForm):
 class PredictionForm(FlaskForm):
     # class Meta:
     #     csrf = False
+
+    email = StringField('Email', validators=[DataRequired(), Email(), validate_email])
     BUSINESS_PROJECT = SelectField('Business Project', choices=[ ('NEW', 'Fresh'), ('EXISTING', 'Existing')], validators=[DataRequired()])
     VALUE_CHAIN_CATEGORY = SelectField('Value Chain Category', choices=[('PRE-UPSTREAM', 'Pre-Upstream'), ('UPSTREAM', 'Upstream'),('MIDSTREAM', 'Midstream'), ('DOWNSTREAM', 'Downstream')], validators=[DataRequired()])
     BORROWING_RELATIONSHIP = SelectField('Borrowing Relationship', choices=[ ('NO', 'No'), ('YES', 'Yes')], validators=[DataRequired()])
@@ -200,8 +204,52 @@ def admin_required(f):
 
 #The User class defines the database model.
 
-class User(UserMixin, db.Model):
+# class User(UserMixin, db.Model):
 
+#     id = db.Column(db.Integer, primary_key=True)
+#     business_name = db.Column(db.String(150), nullable=False)
+#     business_address = db.Column(db.String(150), nullable=False)
+#     phone_number = db.Column(db.String(15), nullable=False)
+#     email = db.Column(db.String(100), unique=True, nullable=False)
+#     state = db.Column(db.String(50), nullable=False)
+#     password = db.Column(db.String(200), nullable=False)
+#     prediction_id = db.Column(db.String(36), unique=True, nullable=True)
+#     is_admin = db.Column(db.Boolean, default=False)
+    
+#     #prediction section columns....
+#     business_project = db.Column(db.String(150), nullable=True)
+#     value_chain_cat = db.Column(db.String(150), nullable=True)
+#     borrowing_relationship = db.Column(db.String(10), nullable=True)
+#     fresh_loan_request = db.Column(db.String(15), nullable=True)
+#     request_submitted_to_bank = db.Column(db.String(10), nullable=True)
+#     feasibility_study_available = db.Column(db.String(10), nullable=True)
+#     proposed_facility_amount = db.Column(db.Float(20), nullable=True)
+
+#     #other data to be provided updates by officer 
+
+#     purpose_of_facility = db.Column(db.String(255), nullable=True)
+#     name_of_bank = db.Column(db.String(100), nullable=True)
+#     security_proposed = db.Column(db.String(100), nullable=True)
+#     highlights_of_discussion = db.Column(db.Text)
+#     rm_bm_name_phone_number = db.Column(db.String(100), nullable=True)
+#     rm_bm_email = db.Column(db.String(100), nullable=True)
+#     status_update = db.Column(db.Text)
+#     challenges = db.Column(db.Text)
+#     proposed_next_steps = db.Column(db.Text)
+
+
+# class Admin(db.Model):
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     email = db.Column(db.String(100), unique=True, nullable=False)
+#     admin_name = db.Column(db.String(150), nullable=False)
+#     admin_address = db.Column(db.String(150), nullable=False)
+#     phone_number = db.Column(db.String(15), nullable=False)
+#     password = db.Column(db.String(200), nullable=False)
+#     is_admin = db.Column(db.Boolean, default=False)
+
+
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     business_name = db.Column(db.String(150), nullable=False)
     business_address = db.Column(db.String(150), nullable=False)
@@ -211,8 +259,8 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(200), nullable=False)
     prediction_id = db.Column(db.String(36), unique=True, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
-    
-    #prediction section columns....
+
+    # Prediction section columns
     business_project = db.Column(db.String(150), nullable=True)
     value_chain_cat = db.Column(db.String(150), nullable=True)
     borrowing_relationship = db.Column(db.String(10), nullable=True)
@@ -221,8 +269,7 @@ class User(UserMixin, db.Model):
     feasibility_study_available = db.Column(db.String(10), nullable=True)
     proposed_facility_amount = db.Column(db.Float(20), nullable=True)
 
-    #other data to be provided updates by officer 
-
+    # Additional data updates by officer
     purpose_of_facility = db.Column(db.String(255), nullable=True)
     name_of_bank = db.Column(db.String(100), nullable=True)
     security_proposed = db.Column(db.String(100), nullable=True)
@@ -233,14 +280,12 @@ class User(UserMixin, db.Model):
     challenges = db.Column(db.Text)
     proposed_next_steps = db.Column(db.Text)
 
-
-class SearchForm(FlaskForm):
-    search_term = StringField('Search Term', validators=[DataRequired()])
-    submit = SubmitField('Search')
+    # Relationship to track which admin made the prediction
+    predicted_by_admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=True)
+    predicted_by_admin = db.relationship('Admin', back_populates='predicted_users')
 
 
 class Admin(db.Model):
-
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     admin_name = db.Column(db.String(150), nullable=False)
@@ -248,6 +293,14 @@ class Admin(db.Model):
     phone_number = db.Column(db.String(15), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+
+    # Relationship with users for predictions
+    predicted_users = db.relationship('User', back_populates='predicted_by_admin', lazy=True)
+
+
+class SearchForm(FlaskForm):
+    search_term = StringField('Search Term', validators=[DataRequired()])
+    submit = SubmitField('Search')
 
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
@@ -430,36 +483,73 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+
+#     form = LoginForm()
+#     if form.validate_on_submit():
+#         # Clear any existing session data
+#         session.clear()
+#         email = form.email.data
+#         password = form.password.data
+#         # Check for user login
+#         user = User.query.filter_by(email=email).first()
+#         if user and check_password_hash(user.password, password):
+#             session['user_id'] = user.id
+#             session['email'] = user.email
+#             session['is_admin'] = False
+#             flash('Login successful!', 'success')
+#             return redirect(url_for('dashboard'))
+        
+#         # Check for admin login
+#         admin = Admin.query.filter_by(email=email).first()
+#         if admin and check_password_hash(admin.password, password):
+#             session['user_id'] = admin.id
+#             session['email'] = admin.email
+#             session['is_admin'] = True
+#             flash('Login successful!', 'success')
+#             return redirect(url_for('admin_dashboard'))
+        
+#         # If login fails
+#         flash('Login failed. Check your credentials and try again.', 'danger')
+    
+#     return render_template('login.html', form=form)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     form = LoginForm()
+    
     if form.validate_on_submit():
         # Clear any existing session data
         session.clear()
+        
         email = form.email.data
         password = form.password.data
+        
+        # Check for admin login first
+        admin = Admin.query.filter_by(email=email).first()
+        if admin and check_password_hash(admin.password, password):
+            session['user_id'] = admin.id
+            session['email'] = admin.email
+            session['is_admin'] = True
+            login_user(admin)  # Flask-Login authentication
+            flash('Admin login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+
         # Check for user login
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['email'] = user.email
             session['is_admin'] = False
-            flash('Login successful!', 'success')
+            login_user(user)  # Flask-Login authentication
+            flash('User login successful!', 'success')
             return redirect(url_for('dashboard'))
-        
-        # Check for admin login
-        admin = Admin.query.filter_by(email=email).first()
-        if admin and check_password_hash(admin.password, password):
-            session['user_id'] = admin.id
-            session['email'] = admin.email
-            session['is_admin'] = True
-            flash('Login successful!', 'success')
-            return redirect(url_for('admin_dashboard'))
-        
+
         # If login fails
         flash('Login failed. Check your credentials and try again.', 'danger')
-    
+
     return render_template('login.html', form=form)
 
 
@@ -468,7 +558,8 @@ def login():
 @login_required
 def dashboard():
 
-    form = DeleteUserForm()
+    # form = DeleteUserForm()
+    form=PredictionForm()
     user = User.query.get(session['user_id'])
     return render_template('dashboard.html', user=user, form=form)
 
@@ -477,6 +568,7 @@ def dashboard():
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 @admin_required
 def admin_dashboard():
+
     form = PredictionForm()
     search_form = SearchForm()  # Assuming you have a SearchForm class for the search functionality
     
@@ -484,7 +576,7 @@ def admin_dashboard():
     if search_form.validate_on_submit():
         search_term = search_form.search_term.data
         user = User.query.filter((User.id == search_term) | (User.email == search_term)).first()
-        if user:
+        if  user:
             return render_template('admin_dashboard.html', form=form, search_form=search_form, user=user)
         else:
             flash('User not found', 'danger')
@@ -493,7 +585,6 @@ def admin_dashboard():
     return render_template('admin_dashboard.html', form=form, search_form=search_form)
 
 
-# Admin registration route
 # Admin registration route
 @app.route('/register_admin', methods=['GET', 'POST'])
 # @admin_required
@@ -577,13 +668,297 @@ def search():
 
 
 # #predict route....
+# @app.route('/predict', methods=['POST', 'GET'])
+# @login_required
+# def predict():
+
+#     form = PredictionForm()   # Create an instance of the PredictionForm class
+#     user = User.query.get(session['user_id'])
+#     if form.validate_on_submit():
+
+#         email = user.email
+
+#         try:
+#             # Fetch the form data
+#             business_project = form.BUSINESS_PROJECT.data
+#             value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
+#             borrowing_relationship = form.BORROWING_RELATIONSHIP.data
+#             fresh_loan_request = form.FRESH_LOAN_REQUEST.data
+#             request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
+#             feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
+#             proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
+        
+#     # if request.method == 'POST':
+#     #     # Manually validate the CSRF token
+#     #     csrf_token = request.form.get('csrf_token')
+#     #     if not validate_csrf(csrf_token):
+#     #         flash("CSRF token did not match. Please try again.")
+#     #         return redirect(url_for('predict'))
+
+#             # Fetch the form data
+#             # business_project = request.form.get('BUSINESS_PROJECT')
+#             # value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
+#             # borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
+#             # fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
+#             # request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
+#             # feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
+#             # proposed_facility_amount = request.form.get('PROPOSED_FACILITY_AMOUNT')
+
+#             # Save form data to session
+#             session['form_data'] = {
+#                 'email': email,
+#                 'business_project': business_project,
+#                 'value_chain_cat': value_chain_cat,
+#                 'borrowing_relationship': borrowing_relationship,
+#                 'fresh_loan_request': fresh_loan_request,
+#                 'request_submitted_to_bank': request_submitted_to_bank,
+#                 'feasibility_study_available': feasibility_study_available,
+#                 'proposed_facility_amount': proposed_facility_amount
+#             }
+            
+#             # Dataframe for model that prediction should be carried out on
+#             df = pd.DataFrame({
+#                 'BUSINESS_PROJECT': [business_project],
+#                 'VALUE_CHAIN_CATEGORY': [value_chain_cat],
+#                 'BORROWING_RELATIONSHIP': [borrowing_relationship],
+#                 'FRESH_LOAN_REQUEST': [fresh_loan_request],
+#                 'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
+#                 'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
+#                 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+#             })
+#             encoder_dicts = {
+#                 'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
+#                 'VALUE_CHAIN_CATEGORY': {
+#                     'MIDSTREAM': 0,
+#                     'PRE-UPSTREAM': 1,
+#                     'UPSTREAM': 2,
+#                     'DOWNSTREAM': 3,
+#                     'UPSTREAM AND MIDSTREAM': 4,
+#                     'MIDSTREAM AND DOWNSTREAM': 5,
+#                     'UPSTREAM AND DOWNSTREAM': 6
+#                 },
+#                 'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
+#                 'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
+#                 'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
+#                 'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
+#             }
+
+#             for col, values in encoder_dicts.items():
+#                 df[col].replace(values, inplace=True)
+
+#             loaded_model = joblib.load('../notebook/xgboost.joblib')
+#             prediction = loaded_model.predict(df)
+
+#             if prediction[0] == 1:
+#                 user = User.query.get(session['user_id'])
+#                 if user:
+#                     prediction_id = user.prediction_id
+#                     if prediction_id is None:
+#                         prediction_id = generate_unique_code()
+#                         user.prediction_id = prediction_id
+
+#                     # Update existing user data and save
+#                     user.business_project = business_project
+#                     user.value_chain_cat = value_chain_cat
+#                     user.borrowing_relationship = borrowing_relationship
+#                     user.fresh_loan_request = fresh_loan_request
+#                     user.request_submitted_to_bank = request_submitted_to_bank
+#                     user.feasibility_study_available = feasibility_study_available
+#                     user.proposed_facility_amount = proposed_facility_amount
+
+#                     db.session.commit()
+#                     flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
+#                     return render_template("approval.html", user=user, prediction_id=prediction_id)
+#                 else:
+#                     flash("User not found. Please log in again.")
+#                     return redirect(url_for('login'))
+#             else:
+#                 flash("Your loan request is denied.")
+#                 user = User.query.get(session['user_id'])
+#                 return render_template("disapproval.html", user=user)
+#         except Exception as e:
+#             flash(f'Error: {str(e)}', 'danger')
+#             return redirect(url_for('predict'))   
+#     #fetching previous inputs by same user back to form
+#     elif request.method == 'GET':
+#         if 'form_data' in session:
+#             form_data = session['form_data']
+#             form.BUSINESS_PROJECT.data = form_data['business_project']
+#             form.VALUE_CHAIN_CATEGORY.data = form_data['value_chain_cat']
+#             form.BORROWING_RELATIONSHIP.data = form_data['borrowing_relationship']
+#             form.FRESH_LOAN_REQUEST.data = form_data['fresh_loan_request']
+#             form.REQUEST_SUBMITTED_TO_BANK.data = form_data['request_submitted_to_bank']
+#             form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
+#             form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
+
+#     # else:
+#     #     print(form.errors)
+#     if session['is_admin'] == False:
+#         flash('Please try again', 'info')
+#         return render_template("dashboard.html", form=form, user=user)
+#     else:
+        
+
+#         flash('Please try again', 'info')
+#         return render_template("admin_dashboard.html",form=form, user=user)
+
+# @app.route('/predict', methods=['POST', 'GET'])
+# @login_required
+# def predict():
+#     form = PredictionForm()  # Instantiate form
+#     user = User.query.get(session.get('user_id'))  # Get logged-in user
+
+#     if not user:
+#         flash("User not found. Please log in again.", "danger")
+#         return redirect(url_for('login'))
+
+#     is_admin = user.is_admin  # Check if user is an admin
+#     email = None  # Ensure obligor_email is defined
+#     user = None
+
+#     if form.validate_on_submit():
+
+#         if is_admin and request.method == "POST":
+#             email = request.form.get("email")  # Get email from form input
+#             user= User.query.filter_by(email=email).first()
+
+#             if not user:
+#                 flash("User not found. Please enter a valid email.", "danger")
+#                 return redirect(url_for('admin_dashboard',user=user))
+#         else:
+#             # obligor = user  # If not an admin, use the logged-in user
+#             email = user.email  # Assign obligor's email
+
+#         try:
+#             # Fetch the form data
+#             business_project = form.BUSINESS_PROJECT.data
+#             value_chain_cat = form.VALUE_CHAIN_CATEGORY.data
+#             borrowing_relationship = form.BORROWING_RELATIONSHIP.data
+#             fresh_loan_request = form.FRESH_LOAN_REQUEST.data
+#             request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
+#             feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
+#             proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
+
+#             # Save form data to session
+#             session['form_data'] = {
+#                 'email': email,
+#                 'business_project': business_project,
+#                 'value_chain_cat': value_chain_cat,
+#                 'borrowing_relationship': borrowing_relationship,
+#                 'fresh_loan_request': fresh_loan_request,
+#                 'request_submitted_to_bank': request_submitted_to_bank,
+#                 'feasibility_study_available': feasibility_study_available,
+#                 'proposed_facility_amount': proposed_facility_amount
+#             }
+            
+#             # Prepare data for model prediction
+#             df = pd.DataFrame({
+#                 'BUSINESS_PROJECT': [business_project],
+#                 'VALUE_CHAIN_CATEGORY': [value_chain_cat],
+#                 'BORROWING_RELATIONSHIP': [borrowing_relationship],
+#                 'FRESH_LOAN_REQUEST': [fresh_loan_request],
+#                 'REQUEST_SUBMITTED_TO_BANK': [request_submitted_to_bank],
+#                 'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
+#                 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
+#             })
+
+#             # Encode categorical variables
+#             encoder_dicts = {
+#                 'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
+#                 'VALUE_CHAIN_CATEGORY': {
+#                     'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3,
+#                     'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, 'UPSTREAM AND DOWNSTREAM': 6
+#                 },
+#                 'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
+#                 'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
+#                 'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
+#                 'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
+#             }
+#             for col, values in encoder_dicts.items():
+#                 df[col].replace(values, inplace=True)
+
+#             # Load the prediction model
+#             loaded_model = joblib.load('../notebook/xgboost.joblib')
+#             prediction = loaded_model.predict(df)
+
+#             # Process prediction result
+#             if prediction[0] == 1:
+#                 prediction_id = user.prediction_id
+#                 if prediction_id is None:
+#                     prediction_id = generate_unique_code()
+#                     user.prediction_id = prediction_id
+
+#                 # Save prediction data
+#                 user.business_project = business_project
+#                 user.value_chain_cat = value_chain_cat
+#                 user.borrowing_relationship = borrowing_relationship
+#                 user.fresh_loan_request = fresh_loan_request
+#                 user.request_submitted_to_bank = request_submitted_to_bank
+#                 user.feasibility_study_available = feasibility_study_available
+#                 user.proposed_facility_amount = proposed_facility_amount
+
+#                 db.session.commit()
+
+#                 flash(f"Loan request is successful. Prediction ID: {prediction_id}", "success")
+#                 return render_template("approval.html", user=user, prediction_id=prediction_id)
+#             else:
+#                 flash("Your loan request is denied.", "danger")
+#                 return render_template("disapproval.html", user=user)
+
+#         except Exception as e:
+#             flash(f'Error: {str(e)}', 'danger')
+#             return redirect(url_for('predict'))
+
+#     # Fetch previous inputs if available (for GET requests)
+#     if request.method == 'GET' and 'form_data' in session:
+#         form_data = session['form_data']
+#         form.BUSINESS_PROJECT.data = form_data.get('business_project')
+#         form.VALUE_CHAIN_CATEGORY.data = form_data.get('value_chain_cat')
+#         form.BORROWING_RELATIONSHIP.data = form_data.get('borrowing_relationship')
+#         form.FRESH_LOAN_REQUEST.data = form_data.get('fresh_loan_request')
+#         form.REQUEST_SUBMITTED_TO_BANK.data = form_data.get('request_submitted_to_bank')
+#         form.FEASIBILITY_STUDY_AVAILABLE.data = form_data.get('feasibility_study_available')
+#         form.PROPOSED_FACILITY_AMOUNT.data = form_data.get('proposed_facility_amount')
+
+#     # if user:
+#     #         session['user_id'] = user.id
+#     #         return render_template("dashboard.html", form=form, user=user)
+#     # else:
+#     #     return render_template("admin_dashboard.html", form=form, user=user)
+
+#     if session['is_admin'] == False:
+#         flash('Please try again', 'info')
+#         return render_template("dashboard.html", form=form, user=user)
+#     else:
+        
+#         flash('Please try again', 'info')
+#         return render_template("prediction.html",form=form, user=user)
+
 @app.route('/predict', methods=['POST', 'GET'])
 @login_required
 def predict():
+    form = PredictionForm()  # Instantiate form
+    current_user = User.query.get(session.get('user_id'))  # Get logged-in user
 
-    form = PredictionForm()   # Create an instance of the PredictionForm class
-    user = User.query.get(session['user_id'])
+    if not current_user:
+        flash("User not found. Please log in again.", "danger")
+        return redirect(url_for('login'))
+
+    is_admin = current_user.is_admin  # Check if user is an admin
+    selected_user = None  
+
     if form.validate_on_submit():
+        if is_admin and request.method == "POST":
+            email = request.form.get("email")  # Get email from form input
+            selected_user = User.query.filter_by(email=email).first()
+
+            if not selected_user:
+                flash("User not found. Please enter a valid email.", "danger")
+                return redirect(url_for('admin_dashboard'))
+
+        else:
+            selected_user = current_user  # If not an admin, use the logged-in user
+
         try:
             # Fetch the form data
             business_project = form.BUSINESS_PROJECT.data
@@ -593,35 +968,8 @@ def predict():
             request_submitted_to_bank = form.REQUEST_SUBMITTED_TO_BANK.data
             feasibility_study_available = form.FEASIBILITY_STUDY_AVAILABLE.data
             proposed_facility_amount = form.PROPOSED_FACILITY_AMOUNT.data
-        
-    # if request.method == 'POST':
-    #     # Manually validate the CSRF token
-    #     csrf_token = request.form.get('csrf_token')
-    #     if not validate_csrf(csrf_token):
-    #         flash("CSRF token did not match. Please try again.")
-    #         return redirect(url_for('predict'))
 
-            # Fetch the form data
-            # business_project = request.form.get('BUSINESS_PROJECT')
-            # value_chain_cat = request.form.get('VALUE_CHAIN_CATEGORY')
-            # borrowing_relationship = request.form.get('BORROWING_RELATIONSHIP')
-            # fresh_loan_request = request.form.get('FRESH_LOAN_REQUEST')
-            # request_submitted_to_bank = request.form.get('REQUEST_SUBMITTED_TO_BANK')
-            # feasibility_study_available = request.form.get('FEASIBILITY_STUDY_AVAILABLE')
-            # proposed_facility_amount = request.form.get('PROPOSED_FACILITY_AMOUNT')
-
-            # Save form data to session
-            session['form_data'] = {
-                'business_project': business_project,
-                'value_chain_cat': value_chain_cat,
-                'borrowing_relationship': borrowing_relationship,
-                'fresh_loan_request': fresh_loan_request,
-                'request_submitted_to_bank': request_submitted_to_bank,
-                'feasibility_study_available': feasibility_study_available,
-                'proposed_facility_amount': proposed_facility_amount
-            }
-            
-            # Dataframe for model that prediction should be carried out on
+            # Prepare data for model prediction
             df = pd.DataFrame({
                 'BUSINESS_PROJECT': [business_project],
                 'VALUE_CHAIN_CATEGORY': [value_chain_cat],
@@ -631,78 +979,62 @@ def predict():
                 'FEASIBILITY_STUDY_AVAILABLE': [feasibility_study_available],
                 'PROPOSED_FACILITY_AMOUNT': [proposed_facility_amount]
             })
+
+            # Encode categorical variables
             encoder_dicts = {
                 'BUSINESS_PROJECT': {'EXISTING': 0, 'NEW': 1},
                 'VALUE_CHAIN_CATEGORY': {
-                    'MIDSTREAM': 0,
-                    'PRE-UPSTREAM': 1,
-                    'UPSTREAM': 2,
-                    'DOWNSTREAM': 3,
-                    'UPSTREAM AND MIDSTREAM': 4,
-                    'MIDSTREAM AND DOWNSTREAM': 5,
-                    'UPSTREAM AND DOWNSTREAM': 6
+                    'MIDSTREAM': 0, 'PRE-UPSTREAM': 1, 'UPSTREAM': 2, 'DOWNSTREAM': 3,
+                    'UPSTREAM AND MIDSTREAM': 4, 'MIDSTREAM AND DOWNSTREAM': 5, 'UPSTREAM AND DOWNSTREAM': 6
                 },
                 'BORROWING_RELATIONSHIP': {'YES': 0, 'NO': 1},
                 'FRESH_LOAN_REQUEST': {'YES': 0, 'NO': 1},
                 'REQUEST_SUBMITTED_TO_BANK': {'YES': 0, 'NO': 1},
                 'FEASIBILITY_STUDY_AVAILABLE': {'YES': 0, 'NO': 1, 'NIL': 2}
             }
-
             for col, values in encoder_dicts.items():
                 df[col].replace(values, inplace=True)
 
+            # Load the prediction model
             loaded_model = joblib.load('../notebook/xgboost.joblib')
             prediction = loaded_model.predict(df)
 
+            # Process prediction result
             if prediction[0] == 1:
-                user = User.query.get(session['user_id'])
-                if user:
-                    prediction_id = user.prediction_id
-                    if prediction_id is None:
-                        prediction_id = generate_unique_code()
-                        user.prediction_id = prediction_id
+                prediction_id = selected_user.prediction_id
+                if prediction_id is None:
+                    prediction_id = generate_unique_code()
+                    selected_user.prediction_id = prediction_id
 
-                    # Update existing user data and save
-                    user.business_project = business_project
-                    user.value_chain_cat = value_chain_cat
-                    user.borrowing_relationship = borrowing_relationship
-                    user.fresh_loan_request = fresh_loan_request
-                    user.request_submitted_to_bank = request_submitted_to_bank
-                    user.feasibility_study_available = feasibility_study_available
-                    user.proposed_facility_amount = proposed_facility_amount
+                # Save prediction data
+                selected_user.business_project = business_project
+                selected_user.value_chain_cat = value_chain_cat
+                selected_user.borrowing_relationship = borrowing_relationship
+                selected_user.fresh_loan_request = fresh_loan_request
+                selected_user.request_submitted_to_bank = request_submitted_to_bank
+                selected_user.feasibility_study_available = feasibility_study_available
+                selected_user.proposed_facility_amount = proposed_facility_amount
 
-                    db.session.commit()
-                    flash(f"Your loan request is successful. Your prediction ID is {prediction_id}.")
-                    return render_template("approval.html", user=user, prediction_id=prediction_id)
-                else:
-                    flash("User not found. Please log in again.")
-                    return redirect(url_for('login'))
+                # Link the admin to the prediction
+                if is_admin:
+                    selected_user.predicted_by_admin = current_user  # Assign admin
+
+                db.session.commit()
+
+                flash(f"Loan request is successful. Prediction ID: {prediction_id}", "success")
+                return render_template("approval.html", user=selected_user, prediction_id=prediction_id)
             else:
-                flash("Your loan request is denied.")
-                user = User.query.get(session['user_id'])
-                return render_template("disapproval.html", user=user)
+                flash("Your loan request is denied.", "danger")
+                return render_template("disapproval.html", user=selected_user)
+
         except Exception as e:
             flash(f'Error: {str(e)}', 'danger')
-            return redirect(url_for('predict'))   
-    #fetching previous inputs by same user back to form
-    elif request.method == 'GET':
-        if 'form_data' in session:
-            form_data = session['form_data']
-            form.BUSINESS_PROJECT.data = form_data['business_project']
-            form.VALUE_CHAIN_CATEGORY.data = form_data['value_chain_cat']
-            form.BORROWING_RELATIONSHIP.data = form_data['borrowing_relationship']
-            form.FRESH_LOAN_REQUEST.data = form_data['fresh_loan_request']
-            form.REQUEST_SUBMITTED_TO_BANK.data = form_data['request_submitted_to_bank']
-            form.FEASIBILITY_STUDY_AVAILABLE.data = form_data['feasibility_study_available']
-            form.PROPOSED_FACILITY_AMOUNT.data = form_data['proposed_facility_amount']
+            return redirect(url_for('predict'))
 
-    # else:
-    #     print(form.errors)
-
-    return render_template("prediction.html", form=form, user=user)
+    return render_template("prediction.html", form=form, user=current_user)
 
 
- 
+
 #API register route 
 @app.route('/api/register', methods=['POST'])
 
@@ -967,6 +1299,10 @@ def show_admins():
     return render_template('admins.html', admins=admins)
    
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
 
+    with app.app_context():
+        db.create_all()
+        print("Database initialized successfully.")
+        # Create all tables
+    app.run(host='0.0.0.0', debug=True)
 

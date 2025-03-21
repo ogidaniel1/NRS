@@ -6,13 +6,18 @@
         <div class="card-header bg-success text-white text-center">
             <h2>Prediction Status Page</h2>
         </div>
+
+
         <div class="card-body">
-            <form  method="POST" action="{{ url_for('predict') }}" >
+            <form method="POST" action="{{ url_for('predict') }}">
                 {{ form.hidden_tag() }}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                {% if session['is_admin'] %}
+                                <th>Enter Obligor's Email</th>
+                                {% endif %}
                                 <th>Proposed Facility Amount</th>
                                 <th>Business Project</th>
                                 <th>Value Chain Category</th>
@@ -24,6 +29,11 @@
                         </thead>
                         <tbody>
                             <tr>
+                                {% if session['is_admin'] %}
+                                <td>{{ form.email(class="form-control") }}</td>
+                                {% else %}
+                                <td>{{ form.email(class="form-control", type='hidden') }}</td>
+                                {% endif %}
                                 <td>{{ form.PROPOSED_FACILITY_AMOUNT(class="form-control") }}</td>
                                 <td>{{ form.BUSINESS_PROJECT(class="form-control") }}</td>
                                 <td>{{ form.VALUE_CHAIN_CATEGORY(class="form-control") }}</td>
@@ -39,7 +49,34 @@
                     {{ form.submit(class="btn btn-success") }}
                     <input type="reset" value="Reset" class="btn btn-secondary">
                 </div>
+                <div class="text-center mt-3">
+                    <a href="#" data-toggle="modal" data-target="#termsModal">Terms and Conditions</a>
+                </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Insert your terms and conditions content here -->
+                <p>Here are the terms and conditions...</p>
+                <p>An Obligor or group of clustered Obligors minimum: is x,xxx,xxx Naira</p>
+                <!-- Add more content as needed -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
+
+
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
@@ -10,7 +12,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
                             <span data-feather="file"></span>
-                            Admin Dashboard
+                            Checking Officer Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
@@ -71,12 +73,14 @@
                             <h2>Predict</h2>
                         </div>
                         <div class="card-body">
-                            <form action="{{ url_for('predict') }}" method="post">
+                            <form action="{{ url_for('predict') }}" method="POST">
                                 {{ form.hidden_tag() }}
                                 <div class="table-responsive">
                                     <table class="table table-striped">
                                         <thead>
                                             <tr>
+                                                      
+                                                <th>Obligor Email</th>
                                                 <th>Proposed Facility Amount</th>
                                                 <th>Business Project</th>
                                                 <th>Value Chain Category</th>
@@ -88,6 +92,7 @@
                                         </thead>
                                         <tbody>
                                             <tr>
+                                                <td>{{ form.email(class="form-control") }}</td>
                                                 <td>{{ form.PROPOSED_FACILITY_AMOUNT(class="form-control") }}</td>
                                                 <td>{{ form.BUSINESS_PROJECT(class="form-control") }}</td>
                                                 <td>{{ form.VALUE_CHAIN_CATEGORY(class="form-control") }}</td>
@@ -97,11 +102,14 @@
                                                 <td>{{ form.FEASIBILITY_STUDY_AVAILABLE(class="form-control") }}</td>
                                             </tr>
                                         </tbody>
-                                    </table>
+                                    </table>                
                                 </div>
                                 <div class="text-center">
-                                    <button type="submit" class="btn btn-success">Predict</button>
+                                    <button type="submit" id='' class="btn btn-success">Predict</button>
                                     <button type="reset" class="btn btn-secondary">Reset</button>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="#" data-toggle="modal" data-target="#termsModal">Terms and Conditions</a>
                                 </div>
                             </form>
                         </div>
@@ -109,6 +117,29 @@
                 </div>
             </div>
         </main>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" role="dialog" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Insert your terms and conditions content here -->
+                <p>Here are the terms and conditions...</p>
+                <p>An Obligor or group of clustered Obligors minimum: is x,xxx,xxx Naira</p>
+                <!-- Add more content as needed -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 

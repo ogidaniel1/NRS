@@ -66,23 +66,61 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane" id="predict">
-                    <div class="card">
-                        <div class="card-header bg-success text-white text-center">
-                            <h2>Predict</h2>
-                        </div>
-                        <div class="card-body">
-                            <p>Welcome to the prediction page!</p>
-                            <div class="text-center">
-                                <a href="{{ url_for('prediction') }}" class="btn btn-success btn-lg">Click to Predict</a>
+                 <!-- <p>Welcome to the prediction page!</p> -->
+                            <div class="tab-pane" id="predict">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white text-center">
+                                        <h2>Welcome to the prediction page!</h2>
+                                    </div>
+                                    <div class="card-body">
+                                        <form action="{{ url_for('predict') }}" method="post">
+                                            <td><input type="hidden" name="email" value="{{ user.email }}"></td>
+                                            {{ form.hidden_tag() }}
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>                            
+                                                         
+                                                            <!-- <th>Obligor Email</th> -->
+                                                            <th>Proposed Facility Amount</th>
+                                                            <th>Business Project</th>
+                                                            <th>Value Chain Category</th>
+                                                            <th>Borrowing Relationship</th>
+                                                            <th>Fresh Loan Request</th>
+                                                            <th>Request Submitted to Bank</th>
+                                                            <th>Feasibility Study Available</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                             
+                                                            <!-- <td>{{ form.email(class="form-control") }}</td> -->
+                                                            <td>{{ form.PROPOSED_FACILITY_AMOUNT(class="form-control") }}</td>
+                                                            <td>{{ form.BUSINESS_PROJECT(class="form-control") }}</td>
+                                                            <td>{{ form.VALUE_CHAIN_CATEGORY(class="form-control") }}</td>
+                                                            <td>{{ form.BORROWING_RELATIONSHIP(class="form-control") }}</td>
+                                                            <td>{{ form.FRESH_LOAN_REQUEST(class="form-control") }}</td>
+                                                            <td>{{ form.REQUEST_SUBMITTED_TO_BANK(class="form-control") }}</td>
+                                                            <td>{{ form.FEASIBILITY_STUDY_AVAILABLE(class="form-control") }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>                
+                                            </div>
+                                            <div class="text-center">
+                                                <button type="submit" class="btn btn-success">Predict</button>
+                                                <button type="reset" class="btn btn-secondary">Reset</button>
+                                            </div>
+                                            <div class="text-center mt-3">
+                                                <a href="#" data-toggle="modal" data-target="#termsModal">Terms and Conditions</a>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
-                            <!-- Prediction form or content goes here -->
                         </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+
+                    </main>
+        </div>
 </div>
 
 {% endblock %}

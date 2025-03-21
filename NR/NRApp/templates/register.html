@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <!-- jQuery UI CSS -->
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <!-- Select2 CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <style>
         .header-light-green {
             background-color: #d4edda;
@@ -17,11 +18,15 @@
         }
     </style>
     <!-- jQuery and jQuery UI -->
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <!-- Select2 JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+   
 </head>
+
 <body>
     {% extends "base.html" %}
     {% block title %}Register{% endblock %}
@@ -36,18 +41,18 @@
                     <div class="card-body">
                         <!-- Flash messages -->
                         {% with messages = get_flashed_messages(with_categories=true) %}
-                            {% if messages %}
-                                <div class="pt-3">
-                                    {% for category, message in messages %}
-                                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                            {{ message }}
-                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                                <span aria-hidden="true">&times;</span>
-                                            </button>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                        {% if messages %}
+                        <div class="pt-3">
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         {% endwith %}
                         <form method="POST" action="{{ url_for('register') }}">
                             {{ form.hidden_tag() }}
@@ -67,10 +72,14 @@
                                 <label for="email">Email</label>
                                 {{ form.email(class="form-control", id="email") }}
                             </div>
+
+
                             <div class="form-group">
-                                <label for="state">State of Business</label>
+                                <label for="state">{{ form.state.label }}</label>
                                 {{ form.state(class="form-control", id="state") }}
                             </div>
+                            
+                 
                             <div class="form-group">
                                 <label for="password">Password</label>
                                 {{ form.password(class="form-control", id="password") }}
@@ -92,14 +101,13 @@
         </div>
     </div>
     {% endblock %}
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+   {% block scripts %}
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+    // <!-- JavaScript for password -->    
     <script>
-        $(document).ready(function() {
-            $('#state').select2();
-        });
-        
         const password = document.querySelector('input[name="password"]');
         const confirmPassword = document.querySelector('input[name="confirm_password"]');
 
@@ -110,6 +118,35 @@
                 e.target.setCustomValidity('');
             }
         });
+
+        </script>
+
+        <script>
+// <!-- JavaScript for dynamic LGA population -->
+    
+    $(document).ready(function() {
+        $('#state').change(function() {
+            var selectedState = $(this).val();
+            if (selectedState) {
+                $.ajax({
+                    url: "{{ url_for('get_lgas') }}",
+                    type: 'GET',
+                    data: { state: selectedState },
+                    success: function(response) {
+                        var lgaSelect = $('#lga');
+                        lgaSelect.empty();
+                        $.each(response.lga, function(index, lga) {
+                            lgaSelect.append(new Option(lga, lga));
+                        });
+                    },
+                    error: function() {
+                        alert('Error loading LGAs.');
+                    }
+                });
+            }
+        });
+    });
+
     </script>
-</body>
-</html>
+    </body>
+    {% endblock %}
