@@ -32,7 +32,7 @@ import joblib
 import pickle, sqlite3
 import random, time
 from datetime import timedelta
-
+# needs upgrade with hugginface.
 
 app = Flask(__name__)
 #incase of deployment to live server
